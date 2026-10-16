@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chitwan Edits | Video Editor for Reels, YouTube &amp; Brands</title>
+  <meta name="description" content="Chitwan Edits: short-form reels, YouTube edits, brand films, SaaS motion graphics and real estate videos, cut for retention and finished to look premium.">
+  <meta property="og:title" content="Chitwan Edits | Video Editor">
+  <meta property="og:description" content="Reels, YouTube edits, brand films and motion graphics that make people stop scrolling.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chitwan Edits">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0b0d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d4ff3a'/%3E%3Cpath d='M26 20l20 12-20 12z' fill='%230b0b0d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="home">
+  <header class="nav">
+    <a class="brand" href="index.html" aria-label="Chitwan Edits home">Chitwan<span>Edits</span></a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#work">Work</a>
+      <a class="hide-sm" href="work.html?c=before-after">Before / After</a>
+      <a class="btn btn-accent btn-small" href="#contact">Let's talk</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-collage" id="hero-collage" aria-hidden="true"></div>
+      <div class="hero-strip" data-strip="0" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="eyebrow">Video editor · Motion designer</p>
+        <h1 class="hero-title">Edits that make people <em>stop scrolling.</em></h1>
+        <p class="hero-sub">Reels, YouTube videos, brand films and SaaS motion graphics, cut for retention and finished to look premium.</p>
+        <div class="hero-cta">
+          <a class="btn btn-accent" href="#work">See the work</a>
+          <a class="btn btn-ghost" href="#contact">Start a project</a>
+        </div>
+      </div>
+      <div class="hero-strip" data-strip="1" aria-hidden="true"></div>
+      <a class="scroll-hint" href="#work">
+        <span>Scroll to see the full edits</span>
+        <span class="scroll-mouse" aria-hidden="true"></span>
+      </a>
+    </section>
+
+    <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+
+    <section class="work wrap" id="work">
+      <div class="work-intro">
+        <div>
+          <p class="eyebrow">Selected work</p>
+          <h2>Hover to preview.<br>Click to watch.</h2>
+        </div>
+        <ul class="stats" id="work-stats"></ul>
+      </div>
+      <nav class="chips" id="cat-chips" aria-label="Jump to category"></nav>
+      <div id="categories"></div>
+    </section>
+
+    <section class="clients wrap" id="clients" hidden>
+      <p class="eyebrow">Trusted by</p>
+      <ul class="client-list"></ul>
+    </section>
+
+    <section class="reviews wrap" id="reviews" hidden>
+      <p class="eyebrow">Client words</p>
+      <h2>What clients say</h2>
+      <div class="review-grid"></div>
+    </section>
+
+    <section class="contact wrap" id="contact">
+      <div class="contact-panel reveal">
+        <p class="eyebrow">Got footage?</p>
+        <h2>Let's turn it into something people finish watching.</h2>
+        <p class="lead">Reels, YouTube videos, product explainers or a full brand film. Send the raw footage and the goal, and I'll handle the edit, motion and polish.</p>
+        <div class="contact-links" id="contact-links"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot wrap">
+    <span>© <span data-year></span> Chitwan Edits</span>
+    <a href="#">Back to top ↑</a>
+  </footer>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-labelledby="lb-title" hidden>
+    <div class="lb-backdrop" data-close></div>
+    <div class="lb-panel">
+      <div class="lb-stage" id="lb-stage"></div>
+      <div class="lb-meta">
+        <div>
+          <p class="lb-tag" id="lb-tag"></p>
+          <h3 id="lb-title"></h3>
+        </div>
+        <div class="lb-controls">
+          <button class="lb-btn" type="button" data-prev aria-label="Previous video">←</button>
+          <button class="lb-btn" type="button" data-next aria-label="Next video">→</button>
+          <button class="lb-btn" type="button" data-close aria-label="Close">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data/site.js"></script>
+  <script src="data/videos.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

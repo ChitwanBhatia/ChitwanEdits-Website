@@ -1,0 +1,15 @@
+# Original footage: many GB and private client work. The site only needs site/media/.
+Videos/
+
+# Working files from the video review (contact sheets, notes)
+_analysis/
+
+# Local build cache and editor/app settings
+tools/.build-cache.json
+.claude/
+node_modules/
+
+# OS clutter
+Thumbs.db
+desktop.ini
+.DS_Store
