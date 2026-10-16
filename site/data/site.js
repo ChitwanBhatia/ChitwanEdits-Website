@@ -5,10 +5,11 @@ window.CE_SITE = {
   // Leave a field empty ('') to hide that button.
   contact: {
     email: '',       // e.g. 'hello@chitwanedits.com'
-    whatsapp: '',    // digits only with country code, e.g. '919876543210'
+    whatsapp: '916399335426',    // digits only with country code, e.g. '919876543210'
     instagram: '',   // full profile URL
     linkedin: '',    // full profile URL
     youtube: '',     // full channel URL
+    x: 'https://x.com/chitwan_edits',   // full profile URL
   },
 
   // Client reviews, shown in a "What clients say" section once this list has entries.

@@ -262,12 +262,21 @@
     if (!box) return;
     const c = SITE.contact || {};
     const links = [];
-    if (c.email) links.push(`<a class="btn btn-accent" href="mailto:${esc(c.email)}">Email me</a>`);
-    if (c.whatsapp) links.push(`<a class="btn btn-ghost" href="https://wa.me/${esc(String(c.whatsapp).replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>`);
-    if (c.instagram) links.push(`<a class="btn btn-ghost" href="${esc(c.instagram)}" target="_blank" rel="noopener">Instagram</a>`);
-    if (c.linkedin) links.push(`<a class="btn btn-ghost" href="${esc(c.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`);
-    if (c.youtube) links.push(`<a class="btn btn-ghost" href="${esc(c.youtube)}" target="_blank" rel="noopener">YouTube</a>`);
-    box.innerHTML = links.length ? links.join('') : '<p class="contact-empty">Contact links coming soon.</p>';
+    if (c.email) links.push(['Email me', `mailto:${c.email}`]);
+    if (c.whatsapp) links.push(['WhatsApp', `https://wa.me/${String(c.whatsapp).replace(/\D/g, '')}`]);
+    if (c.instagram) links.push(['Instagram', c.instagram]);
+    if (c.linkedin) links.push(['LinkedIn', c.linkedin]);
+    if (c.youtube) links.push(['YouTube', c.youtube]);
+    if (c.x) links.push(['X', c.x]);
+    // The first available link is the main (accent) button.
+    box.innerHTML = links.length
+      ? links
+          .map(([label, href], i) => {
+            const external = href.startsWith('mailto:') ? '' : ' target="_blank" rel="noopener"';
+            return `<a class="btn ${i ? 'btn-ghost' : 'btn-accent'}" href="${esc(href)}"${external}>${label}</a>`;
+          })
+          .join('')
+      : '<p class="contact-empty">Contact links coming soon.</p>';
   }
 
   function renderSocialProof() {
