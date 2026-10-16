@@ -178,8 +178,8 @@
       video.autoplay = true;
       video.playsInline = true;
       video.poster = v.poster;
-      video.src = v.local;
-      // No YouTube link and no local original (e.g. once deployed): loop the preview instead.
+      video.src = v.full;
+      // If the full-watch clip can't load, loop the preview instead.
       video.addEventListener('error', () => {
         if (video.dataset.fallback) return;
         video.dataset.fallback = '1';

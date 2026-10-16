@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clip Picker</title>
+<!-- Local tool: open http://localhost:8080/tools/picker.html while `node tools/serve.mjs` runs.
+     Pick a short silent preview and a 20–30 s "full watch" cut for every video; saves to tools/picks.json. -->
+<style>
+  :root {
+    --bg: #0b0b0d; --bg-2: #141418; --bg-3: #1d1d23; --line: rgba(255, 255, 255, 0.1);
+    --text: #f4f4f2; --muted: #9a9aa1; --pv: #d4ff3a; --wt: #5cc8ff; --warn: #ffb547;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, 'Segoe UI', sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  h1, h2 { margin: 0; }
+  .muted { color: var(--muted); }
+  .mono { font-variant-numeric: tabular-nums; }
+  kbd { padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--bg-3); font-size: 0.8em; }
+
+  .btn { padding: 8px 14px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 999px; background: rgba(255, 255, 255, 0.06); cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--text); }
+  .btn.accent { border-color: transparent; background: var(--pv); color: #0b0b0d; font-weight: 600; }
+  .btn.ghost { background: transparent; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  .top { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 16px; background: rgba(11, 11, 13, 0.92); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+  .top .brand { font-weight: 700; letter-spacing: 0.02em; }
+  .pill { padding: 3px 10px; border-radius: 999px; background: var(--bg-3); font-size: 0.85rem; }
+  .top select { flex: 1 1 260px; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); }
+  .top .spacer { flex: 1; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 14px 16px 40px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
+  .meta h1 { font-size: 1.25rem; }
+  .tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pv); }
+
+  .player { display: flex; justify-content: center; border-radius: 12px; background: #000; overflow: hidden; }
+  .player video { display: block; max-width: 100%; height: min(46vh, 520px); background: #000; cursor: pointer; }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 12px; }
+  .transport .icon { width: 40px; padding: 8px 0; text-align: center; }
+  .modes { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); }
+  .mode { padding: 6px 12px; border: 0; border-radius: 999px; background: none; cursor: pointer; color: var(--muted); }
+  .mode small { opacity: 0.8; }
+  .mode.on[data-kind="preview"] { background: var(--pv); color: #0b0b0d; font-weight: 600; }
+  .mode.on[data-kind="watch"] { background: var(--wt); color: #0b0b0d; font-weight: 600; }
+  .zoom { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); }
+  .zoom input { width: 120px; accent-color: var(--pv); }
+
+  /* Timeline: fixed lane labels on the left, scrollable time area on the right. */
+  .timeline { display: grid; grid-template-columns: 92px 1fr; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); overflow: hidden; }
+  .labels > div { display: flex; align-items: center; height: 46px; padding: 0 12px; font-size: 0.8rem; font-weight: 600; border-top: 1px solid var(--line); }
+  .labels > div:first-child { height: 28px; border-top: 0; }
+  .labels .l-pv { color: var(--pv); }
+  .labels .l-wt { color: var(--wt); }
+  .tl { overflow-x: auto; overflow-y: hidden; border-left: 1px solid var(--line); }
+  .tl-inner { position: relative; min-width: 100%; }
+  .ruler { position: relative; height: 28px; cursor: pointer; user-select: none; }
+  .tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(255, 255, 255, 0.16); padding-left: 4px; font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+  .lane { position: relative; height: 46px; border-top: 1px solid var(--line); cursor: crosshair; touch-action: none; user-select: none; }
+  .lane.active { background: rgba(255, 255, 255, 0.035); }
+  .seg { position: absolute; top: 7px; bottom: 7px; min-width: 6px; border-radius: 6px; color: #0b0b0d; font-size: 0.72rem; font-weight: 700; cursor: grab; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .lane[data-kind="preview"] .seg { background: var(--pv); }
+  .lane[data-kind="watch"] .seg { background: var(--wt); }
+  .seg.sel { box-shadow: 0 0 0 2px var(--text); }
+  .seg .h { position: absolute; top: 0; bottom: 0; width: 9px; cursor: ew-resize; background: rgba(0, 0, 0, 0.18); }
+  .seg .h.l { left: 0; }
+  .seg .h.r { right: 0; }
+  .seg .len { pointer-events: none; padding: 0 10px; }
+  .was { position: absolute; top: 4px; bottom: 4px; border: 1px dashed rgba(255, 255, 255, 0.35); border-radius: 6px; pointer-events: none; font-size: 0.65rem; color: var(--muted); padding: 1px 5px; }
+  .in-mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); pointer-events: none; }
+  .in-mark::after { content: 'IN'; position: absolute; top: 2px; left: 4px; font-size: 0.62rem; font-weight: 700; color: var(--warn); }
+  .playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; pointer-events: none; z-index: 3; }
+  .playhead::before { content: ''; position: absolute; top: 0; left: -5px; border: 6px solid transparent; border-top-color: #fff; }
+  .help { margin: 10px 0 0; color: var(--muted); font-size: 0.82rem; line-height: 1.9; }
+
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .sum { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); }
+  .sum[data-kind="preview"] { border-top: 3px solid var(--pv); }
+  .sum[data-kind="watch"] { border-top: 3px solid var(--wt); }
+  .sum-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .sum-head h2 { font-size: 1rem; }
+  .total { font-weight: 600; color: var(--muted); }
+  .total.ok { color: #8be38b; }
+  .total.warn { color: var(--warn); }
+  .ranges { list-style: none; margin: 10px 0; padding: 0; }
+  .ranges li { display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 8px; }
+  .ranges li.sel { background: var(--bg-3); }
+  .ranges li.empty { color: var(--muted); padding-left: 0; }
+  .ranges .jump { border: 0; background: none; padding: 0; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .ranges .jump:hover { text-decoration: underline; }
+  .ranges .x { margin-left: auto; border: 0; background: none; color: var(--muted); cursor: pointer; }
+  .ranges .x:hover { color: #ff8a8a; }
+  .sum-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; padding: 12px 0; background: linear-gradient(transparent, var(--bg) 30%); }
+  .actions #status { margin-right: auto; }
+  .actions .btn.accent { padding: 11px 22px; font-size: 1rem; }
+
+  @media (max-width: 760px) {
+    .summary { grid-template-columns: 1fr; }
+    .zoom { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <span class="brand">Clip picker</span>
+    <span class="pill" id="progress"></span>
+    <select id="list" aria-label="Choose a video"></select>
+    <button class="btn" id="prev" type="button">← Prev</button>
+    <button class="btn" id="next" type="button">Next →</button>
+  </header>
+
+  <main>
+    <div class="meta">
+      <span class="tag" id="cat"></span>
+      <h1 id="title"></h1>
+      <span class="muted mono" id="length"></span>
+    </div>
+
+    <div class="player"><video id="video" preload="auto" playsinline></video></div>
+
+    <div class="transport">
+      <button class="btn icon" id="play" type="button" title="Play / pause (Space)">▶</button>
+      <span class="mono" id="time">0:00.0 / 0:00.0</span>
+      <div class="modes" role="group" aria-label="What I and O add to">
+        <button class="mode" type="button" data-kind="preview">Preview <small>4–5 s</small></button>
+        <button class="mode" type="button" data-kind="watch">Full watch <small>20–30 s</small></button>
+      </div>
+      <button class="btn" id="mark-in" type="button" title="Mark in at the playhead (I)">Mark in <kbd>I</kbd></button>
+      <button class="btn" id="mark-out" type="button" title="Mark out at the playhead (O)">Mark out <kbd>O</kbd></button>
+      <label class="zoom">Zoom <input id="zoom" type="range" min="1" max="40" step="0.5" value="1"></label>
+    </div>
+
+    <div class="timeline">
+      <div class="labels">
+        <div></div>
+        <div class="l-pv">Preview</div>
+        <div class="l-wt">Full watch</div>
+      </div>
+      <div class="tl" id="tl">
+        <div class="tl-inner" id="tl-inner">
+          <div class="ruler" id="ruler"></div>
+          <div class="lane" data-kind="preview"></div>
+          <div class="lane" data-kind="watch"></div>
+          <div class="playhead" id="playhead"></div>
+        </div>
+      </div>
+    </div>
+    <p class="help">
+      Drag on a lane to select a part · drag its edges to trim · drag the middle to move · click a part and press <kbd>Delete</kbd> to remove ·
+      several parts per lane are joined in timeline order ·
+      <kbd>Space</kbd> play · <kbd>←</kbd> <kbd>→</kbd> step ½ s (<kbd>Shift</kbd> 5 s) · <kbd>I</kbd> / <kbd>O</kbd> mark in / out · <kbd>Ctrl</kbd> + scroll to zoom
+    </p>
+
+    <div class="summary">
+      <section class="sum" data-kind="preview">
+        <div class="sum-head"><h2>Preview <span class="muted">· silent loop on the cards</span></h2><span class="total"></span></div>
+        <ul class="ranges"></ul>
+        <div class="sum-actions"><button class="btn" type="button" data-play="preview">▶ Play preview</button></div>
+      </section>
+      <section class="sum" data-kind="watch">
+        <div class="sum-head"><h2>Full watch <span class="muted">· with sound, on click</span></h2><span class="total"></span></div>
+        <ul class="ranges"></ul>
+        <div class="sum-actions">
+          <button class="btn" type="button" data-play="watch">▶ Play full watch</button>
+          <button class="btn ghost" type="button" id="whole">Use the whole video</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="actions">
+      <span class="muted" id="status"></span>
+      <button class="btn ghost" id="skip" type="button">Skip for now</button>
+      <button class="btn accent" id="save" type="button">Save &amp; next →</button>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const video = $('#video');
+  const tl = $('#tl');
+  const inner = $('#tl-inner');
+  const KINDS = ['preview', 'watch'];
+  const TARGET = { preview: [4, 5], watch: [20, 30] };
+  const LANE_NAME = { preview: 'Preview', watch: 'Full watch' };
+  const MIN = 0.25; // shortest part, in seconds
+
+  let manifest = { categories: [], videos: [] };
+  let videos = [];
+  let picks = {}; // saved: { id: { preview, watch, saved } }
+  const drafts = {}; // unsaved edits per video, kept while the page stays open
+  let idx = 0;
+  let cur = { preview: [], watch: [] };
+  let mode = 'preview';
+  let selected = null; // { kind, i }
+  let markIn = null;
+  let dirty = false;
+  let zoom = 1;
+  let drag = null;
+  let seq = null; // { kind, list, i } while playing a selection
+
+  const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+  const dur = () => (Number.isFinite(video.duration) ? video.duration : 0);
+  const total = (list) => list.reduce((sum, [s, e]) => sum + (e - s), 0);
+  const fmt = (t) => {
+    t = Math.max(0, t || 0);
+    const m = Math.floor(t / 60);
+    return `${m}:${(t - m * 60).toFixed(1).padStart(4, '0')}`;
+  };
+  const clone = (p) => ({ preview: (p.preview || []).map((r) => [...r]), watch: (p.watch || []).map((r) => [...r]) });
+  const onTarget = (kind, t) => t >= TARGET[kind][0] - 0.05 && t <= TARGET[kind][1] + 0.05;
+
+  /* ---------- Loading and switching videos ---------- */
+
+  async function load() {
+    manifest = await (await fetch('videos.json', { cache: 'no-store' })).json();
+    videos = manifest.videos;
+    try {
+      const res = await fetch('picks.json', { cache: 'no-store' });
+      if (res.ok) picks = await res.json();
+    } catch { picks = {}; }
+    const wanted = new URLSearchParams(location.search).get('v');
+    let start = videos.findIndex((v) => v.id === wanted);
+    if (start < 0) start = Math.max(0, videos.findIndex((v) => !picks[v.id]));
+    open(start, true);
+  }
+
+  function keepDraft() {
+    const v = videos[idx];
+    if (v && dirty) drafts[v.id] = clone(cur);
+  }
+
+  function open(i, first = false) {
+    if (!first) keepDraft();
+    stopSeq();
+    video.pause();
+    idx = (i + videos.length) % videos.length;
+    const v = videos[idx];
+    const from = drafts[v.id] || picks[v.id];
+    cur = from ? clone(from) : { preview: [], watch: [] };
+    dirty = !!drafts[v.id];
+    selected = null;
+    markIn = null;
+    mode = 'preview';
+    $('#title').textContent = v.title;
+    const cat = manifest.categories.find((c) => c.id === v.cat);
+    $('#cat').textContent = cat ? cat.title : v.cat;
+    $('#length').textContent = '';
+    video.src = `/Videos/${v.src.split('/').map(encodeURIComponent).join('/')}`;
+    history.replaceState(null, '', `?v=${encodeURIComponent(v.id)}`);
+    setStatus(picks[v.id] ? `Saved earlier · ${new Date(picks[v.id].saved).toLocaleString()}` : '');
+    renderList();
+    render();
+  }
+
+  function renderList() {
+    const done = videos.filter((v) => picks[v.id]).length;
+    $('#progress').textContent = `${done} of ${videos.length} picked`;
+    $('#list').innerHTML = videos
+      .map((v, i) => {
+        const unsaved = drafts[v.id] || (i === idx && dirty);
+        const mark = unsaved ? '•' : picks[v.id] ? '✓' : '  ';
+        return `<option value="${i}"${i === idx ? ' selected' : ''}>${mark} ${String(i + 1).padStart(2, '0')} · ${v.title.replace(/</g, '&lt;')}</option>`;
+      })
+      .join('');
+  }
+
+  video.addEventListener('loadedmetadata', () => {
+    $('#length').textContent = `original ${fmt(dur())}`;
+    // Show about a minute across the screen, so short parts are easy to grab on long videos.
+    setZoom(clamp(dur() / 60, 1, 40));
+    render();
+  });
+
+  /* ---------- Drawing ---------- */
+
+  function render() {
+    const d = dur();
+    const v = videos[idx];
+    for (const kind of KINDS) {
+      const lane = $(`.lane[data-kind="${kind}"]`);
+      lane.classList.toggle('active', mode === kind);
+      lane.innerHTML = '';
+      if (!d) continue;
+      if (kind === 'preview' && Number.isFinite(v.start) && v.dur) {
+        const was = document.createElement('div');
+        was.className = 'was';
+        was.style.left = `${(v.start / d) * 100}%`;
+        was.style.width = `${(Math.min(v.dur, d - v.start) / d) * 100}%`;
+        was.textContent = 'current preview';
+        lane.append(was);
+      }
+      cur[kind].forEach(([s, e], i) => {
+        const seg = document.createElement('div');
+        seg.className = `seg${selected && selected.kind === kind && selected.i === i ? ' sel' : ''}`;
+        seg.dataset.i = i;
+        seg.style.left = `${(s / d) * 100}%`;
+        seg.style.width = `${((e - s) / d) * 100}%`;
+        seg.innerHTML = `<span class="h l"></span><span class="len">${(e - s).toFixed(1)}s</span><span class="h r"></span>`;
+        lane.append(seg);
+      });
+      if (markIn !== null && mode === kind) {
+        const m = document.createElement('div');
+        m.className = 'in-mark';
+        m.style.left = `${(markIn / d) * 100}%`;
+        lane.append(m);
+      }
+    }
+
+    for (const kind of KINDS) {
+      const box = $(`.sum[data-kind="${kind}"]`);
+      const list = cur[kind];
+      const t = total(list);
+      const [lo, hi] = TARGET[kind];
+      const tot = $('.total', box);
+      tot.textContent = list.length ? `${t.toFixed(1)} s ${onTarget(kind, t) ? '✓' : `· aim for ${lo}–${hi} s`}` : `aim for ${lo}–${hi} s`;
+      tot.className = `total${list.length ? (onTarget(kind, t) ? ' ok' : ' warn') : ''}`;
+      $('.ranges', box).innerHTML = list.length
+        ? list
+            .map(([s, e], i) => {
+              const sel = selected && selected.kind === kind && selected.i === i ? ' class="sel"' : '';
+              return `<li${sel}><button class="jump" type="button" data-kind="${kind}" data-i="${i}">${fmt(s)} → ${fmt(e)}</button>`
+                + `<span class="muted">${(e - s).toFixed(1)} s</span>`
+                + `<button class="x" type="button" data-kind="${kind}" data-i="${i}" title="Remove">✕</button></li>`;
+            })
+            .join('')
+        : `<li class="empty">Drag on the ${LANE_NAME[kind]} lane, or use Mark in / Mark out.</li>`;
+      const playBtn = $(`[data-play="${kind}"]`);
+      playBtn.disabled = !list.length;
+      playBtn.textContent = seq && seq.kind === kind ? '■ Stop' : `▶ Play ${LANE_NAME[kind].toLowerCase()}`;
+    }
+    $$('.mode').forEach((b) => b.classList.toggle('on', b.dataset.kind === mode));
+    renderRuler();
+    movePlayhead();
+  }
+
+  function renderRuler() {
+    const d = dur();
+    const ruler = $('#ruler');
+    if (!d) { ruler.innerHTML = ''; return; }
+    const pps = inner.clientWidth / d;
+    const step = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600].find((s) => s * pps >= 64) || 600;
+    let html = '';
+    for (let t = 0; t <= d; t += step) {
+      const label = step < 1 ? fmt(t) : `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, '0')}`;
+      html += `<div class="tick" style="left:${(t / d) * 100}%">${label}</div>`;
+    }
+    ruler.innerHTML = html;
+  }
+
+  function movePlayhead() {
+    const d = dur();
+    const t = video.currentTime || 0;
+    $('#playhead').style.left = d ? `${(t / d) * 100}%` : '0';
+    $('#time').textContent = `${fmt(t)} / ${fmt(d)}`;
+    $('#play').textContent = video.paused ? '▶' : '❚❚';
+  }
+
+  function followPlayhead() {
+    const d = dur();
+    if (!d) return;
+    const x = (video.currentTime / d) * inner.clientWidth;
+    if (x < tl.scrollLeft + 20 || x > tl.scrollLeft + tl.clientWidth - 40) tl.scrollLeft = x - tl.clientWidth * 0.2;
+  }
+
+  function setZoom(z, anchorTime) {
+    const d = dur();
+    const keep = anchorTime ?? video.currentTime;
+    const before = d ? (keep / d) * inner.clientWidth - tl.scrollLeft : 0;
+    zoom = clamp(z, 1, 40);
+    $('#zoom').value = zoom;
+    inner.style.width = `${zoom * 100}%`;
+    if (d) tl.scrollLeft = (keep / d) * inner.clientWidth - before;
+    renderRuler();
+  }
+
+  function setStatus(text) { $('#status').textContent = text; }
+
+  /* ---------- Playback ---------- */
+
+  let scrubbing = false;
+  let scrubNext = null;
+  function scrub(t) {
+    if (scrubbing) { scrubNext = t; return; }
+    scrubbing = true;
+    video.currentTime = t;
+  }
+  video.addEventListener('seeked', () => {
+    scrubbing = false;
+    if (scrubNext !== null) { const t = scrubNext; scrubNext = null; scrub(t); }
+    movePlayhead();
+  });
+
+  function seek(t) {
+    stopSeq();
+    video.currentTime = clamp(t, 0, dur());
+    movePlayhead();
+  }
+
+  function togglePlay() {
+    if (seq) { stopSeq(); video.pause(); return; }
+    if (video.paused) video.play(); else video.pause();
+  }
+
+  function playSeq(kind) {
+    if (seq && seq.kind === kind) { stopSeq(); video.pause(); return; }
+    const list = [...cur[kind]].sort((a, b) => a[0] - b[0]);
+    if (!list.length) return;
+    seq = { kind, list, i: 0 };
+    video.muted = kind === 'preview'; // the preview is silent on the site too
+    video.currentTime = list[0][0];
+    video.play();
+    render();
+  }
+
+  function stopSeq() {
+    if (!seq) return;
+    seq = null;
+    video.muted = false;
+    render();
+  }
+
+  // Jumps between the parts of a selection being played.
+  function stepSeq() {
+    if (!seq || video.paused || video.seeking) return;
+    const [, end] = seq.list[seq.i];
+    if (video.currentTime < end - 0.03) return;
+    seq.i += 1;
+    if (seq.i >= seq.list.length) {
+      if (seq.kind === 'preview') seq.i = 0; // loop like the site does
+      else { stopSeq(); video.pause(); return; }
+    }
+    video.currentTime = seq.list[seq.i][0];
+  }
+
+  // Every frame for precise cuts; timeupdate below is the fallback when frames are throttled.
+  function tick() {
+    stepSeq();
+    if (!video.paused) { movePlayhead(); followPlayhead(); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  video.addEventListener('play', movePlayhead);
+  video.addEventListener('pause', movePlayhead);
+  video.addEventListener('timeupdate', () => { stepSeq(); movePlayhead(); });
+  video.addEventListener('click', togglePlay);
+
+  /* ---------- Editing parts ---------- */
+
+  const timeAt = (clientX) => {
+    const r = inner.getBoundingClientRect();
+    return clamp(((clientX - r.left) / r.width) * dur(), 0, dur());
+  };
+
+  // Sort, round and merge overlapping parts; keeps the selection on the part that was edited.
+  function normalize(kind, keep) {
+    const list = cur[kind]
+      .map(([s, e]) => [Math.round(s * 100) / 100, Math.round(e * 100) / 100])
+      .filter(([s, e]) => e - s >= MIN)
+      .sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const r of list) {
+      const last = merged[merged.length - 1];
+      if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+      else merged.push(r);
+    }
+    cur[kind] = merged;
+    if (keep) {
+      const i = merged.findIndex(([s, e]) => keep[0] >= s - 0.01 && keep[0] <= e + 0.01);
+      selected = i >= 0 ? { kind, i } : null;
+    }
+  }
+
+  function changed() {
+    dirty = true;
+    setStatus('Not saved yet');
+    renderList();
+  }
+
+  $$('.lane').forEach((lane) => {
+    lane.addEventListener('pointerdown', (e) => {
+      if (!dur() || e.button !== 0) return;
+      const kind = lane.dataset.kind;
+      const seg = e.target.closest('.seg');
+      const t = timeAt(e.clientX);
+      stopSeq();
+      video.pause();
+      mode = kind;
+      if (seg) {
+        const i = Number(seg.dataset.i);
+        const [s, en] = cur[kind][i];
+        const type = e.target.classList.contains('l') ? 'l' : e.target.classList.contains('r') ? 'r' : 'move';
+        drag = { kind, i, type, t0: t, s, e: en, moved: false };
+        selected = { kind, i };
+      } else {
+        cur[kind].push([t, t]);
+        drag = { kind, i: cur[kind].length - 1, type: 'new', t0: t, moved: false };
+        selected = { kind, i: drag.i };
+      }
+      lane.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      render();
+    });
+
+    lane.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const t = timeAt(e.clientX);
+      const d = dur();
+      const r = cur[drag.kind][drag.i];
+      if (Math.abs(t - drag.t0) > 0.02) drag.moved = true;
+      if (!drag.moved) return;
+      if (drag.type === 'new') { r[0] = Math.min(drag.t0, t); r[1] = Math.max(drag.t0, t); scrub(t); }
+      else if (drag.type === 'l') { r[0] = clamp(drag.s + (t - drag.t0), 0, r[1] - MIN); scrub(r[0]); }
+      else if (drag.type === 'r') { r[1] = clamp(drag.e + (t - drag.t0), r[0] + MIN, d); scrub(r[1]); }
+      else {
+        const len = drag.e - drag.s;
+        r[0] = clamp(drag.s + (t - drag.t0), 0, d - len);
+        r[1] = r[0] + len;
+        scrub(r[0]);
+      }
+      render();
+    });
+
+    const end = () => {
+      if (!drag) return;
+      const { kind, i, type, moved, t0 } = drag;
+      const r = cur[kind][i];
+      drag = null;
+      if (!moved) {
+        if (type === 'new') { cur[kind].splice(i, 1); selected = null; seek(t0); } // a plain click just moves the playhead
+        else seek(r[0]);
+        render();
+        return;
+      }
+      normalize(kind, r);
+      changed();
+      render();
+    };
+    lane.addEventListener('pointerup', end);
+    lane.addEventListener('pointercancel', end);
+  });
+
+  // Ruler: click or drag to scrub.
+  const ruler = $('#ruler');
+  ruler.addEventListener('pointerdown', (e) => {
+    stopSeq();
+    ruler.setPointerCapture(e.pointerId);
+    seek(timeAt(e.clientX));
+    const move = (ev) => scrub(timeAt(ev.clientX));
+    const up = () => { ruler.removeEventListener('pointermove', move); ruler.removeEventListener('pointerup', up); };
+    ruler.addEventListener('pointermove', move);
+    ruler.addEventListener('pointerup', up);
+  });
+
+  function removeSelected(kind = selected && selected.kind, i = selected && selected.i) {
+    if (!kind || i === null || i === undefined) return;
+    cur[kind].splice(i, 1);
+    selected = null;
+    changed();
+    render();
+  }
+
+  function markInHere() {
+    markIn = video.currentTime;
+    setStatus(`In at ${fmt(markIn)} on ${LANE_NAME[mode]} · now press O at the end point`);
+    render();
+  }
+
+  function markOutHere() {
+    const t = video.currentTime;
+    if (markIn === null) { setStatus('Press I at the start point first'); return; }
+    if (t - markIn < MIN) { setStatus('The out point must come after the in point'); return; }
+    const r = [markIn, t];
+    cur[mode].push(r);
+    markIn = null;
+    normalize(mode, r);
+    changed();
+    render();
+  }
+
+  /* ---------- Saving ---------- */
+
+  async function save() {
+    const v = videos[idx];
+    const btn = $('#save');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/picks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: v.id, preview: cur.preview, watch: cur.watch }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      picks[v.id] = data.saved;
+      delete drafts[v.id];
+      dirty = false;
+      const nextOpen = videos.findIndex((x, k) => k > idx && !picks[x.id]);
+      open(nextOpen >= 0 ? nextOpen : idx + 1);
+      setStatus(`Saved “${v.title}” ✓`);
+    } catch (err) {
+      setStatus(`Could not save: ${err.message}. Is the preview server running?`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  /* ---------- Controls ---------- */
+
+  $('#list').addEventListener('change', (e) => open(Number(e.target.value)));
+  $('#prev').addEventListener('click', () => open(idx - 1));
+  $('#next').addEventListener('click', () => open(idx + 1));
+  $('#skip').addEventListener('click', () => open(idx + 1));
+  $('#save').addEventListener('click', save);
+  $('#play').addEventListener('click', togglePlay);
+  $('#mark-in').addEventListener('click', markInHere);
+  $('#mark-out').addEventListener('click', markOutHere);
+  $('#whole').addEventListener('click', () => {
+    if (!dur()) return;
+    cur.watch = [[0, Math.round(dur() * 100) / 100]];
+    selected = null;
+    changed();
+    render();
+  });
+  $$('.mode').forEach((b) => b.addEventListener('click', () => { mode = b.dataset.kind; markIn = null; render(); }));
+  $$('[data-play]').forEach((b) => b.addEventListener('click', () => playSeq(b.dataset.play)));
+  $('.summary').addEventListener('click', (e) => {
+    const x = e.target.closest('.x');
+    const jump = e.target.closest('.jump');
+    if (x) removeSelected(x.dataset.kind, Number(x.dataset.i));
+    else if (jump) {
+      selected = { kind: jump.dataset.kind, i: Number(jump.dataset.i) };
+      mode = selected.kind;
+      seek(cur[selected.kind][selected.i][0]);
+      render();
+    }
+  });
+  $('#zoom').addEventListener('input', (e) => setZoom(Number(e.target.value)));
+  tl.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(zoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2), timeAt(e.clientX));
+  }, { passive: false });
+  window.addEventListener('resize', renderRuler);
+
+  // Buttons give focus back so Space always means play / pause.
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) b.blur();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target instanceof Element && e.target.closest('select, input')) return;
+    const k = e.key.toLowerCase();
+    if (k === ' ') { e.preventDefault(); togglePlay(); }
+    else if (k === 'arrowleft' || k === 'arrowright') {
+      e.preventDefault();
+      const step = (e.shiftKey ? 5 : 0.5) * (k === 'arrowleft' ? -1 : 1);
+      seek(video.currentTime + step);
+      followPlayhead();
+    }
+    else if (k === 'i') markInHere();
+    else if (k === 'o') markOutHere();
+    else if (k === 'delete' || k === 'backspace') { e.preventDefault(); removeSelected(); }
+    else if (k === 'escape') { markIn = null; selected = null; render(); }
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    keepDraft();
+    if (Object.keys(drafts).length) e.preventDefault();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
