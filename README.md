@@ -28,5 +28,9 @@ Then open http://localhost:8080/site/ — clicking a video plays the original fr
 - **Contact links, reviews, client names:** edit `site/data/site.js` and reload — no build needed.
 
 ## Publish
-Upload only the `site/` folder (≈25 MB) to Netlify, Vercel, Cloudflare Pages or GitHub Pages.
-Every video should have a YouTube link first; without one, the player falls back to the looping preview.
+Live at https://chitwanedits.com (and www), hosted free on Cloudflare. Settings are in `wrangler.jsonc`; it uploads only `site/`.
+```
+npx wrangler deploy
+```
+The first run on a new PC asks you to log in to Cloudflare (`npx wrangler login`) and click Allow.
+Videos without a YouTube link open their looping preview with a "full video coming soon" note.

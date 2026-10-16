@@ -1,0 +1,17 @@
+// Cloudflare publish settings. Publish with:  npx wrangler deploy
+// Uploads only the site/ folder and serves it at chitwanedits.com (and www).
+{
+  "name": "chitwanedits",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "chitwanedits.com", "custom_domain": true },
+    { "pattern": "www.chitwanedits.com", "custom_domain": true }
+  ]
+}

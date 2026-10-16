@@ -8,6 +8,7 @@ _analysis/
 tools/.build-cache.json
 .claude/
 node_modules/
+.wrangler/
 
 # OS clutter
 Thumbs.db
