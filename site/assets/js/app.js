@@ -257,26 +257,180 @@
       .join('');
   }
 
+  const whatsappUrl = (text) => {
+    const number = String((SITE.contact || {}).whatsapp || '').replace(/\D/g, '');
+    if (!number) return '';
+    return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+  };
+
   function renderContact() {
     const box = $('#contact-links');
     if (!box) return;
     const c = SITE.contact || {};
-    const links = [];
+    // A null href is the "Contact me" button that opens the form; it leads as the accent button.
+    const links = [['Contact me', null]];
     if (c.email) links.push(['Email me', `mailto:${c.email}`]);
-    if (c.whatsapp) links.push(['WhatsApp', `https://wa.me/${String(c.whatsapp).replace(/\D/g, '')}`]);
+    if (c.whatsapp) links.push(['WhatsApp', whatsappUrl()]);
     if (c.instagram) links.push(['Instagram', c.instagram]);
     if (c.linkedin) links.push(['LinkedIn', c.linkedin]);
     if (c.youtube) links.push(['YouTube', c.youtube]);
     if (c.x) links.push(['X', c.x]);
-    // The first available link is the main (accent) button.
-    box.innerHTML = links.length
-      ? links
-          .map(([label, href], i) => {
-            const external = href.startsWith('mailto:') ? '' : ' target="_blank" rel="noopener"';
-            return `<a class="btn ${i ? 'btn-ghost' : 'btn-accent'}" href="${esc(href)}"${external}>${label}</a>`;
-          })
-          .join('')
-      : '<p class="contact-empty">Contact links coming soon.</p>';
+    box.innerHTML = links
+      .map(([label, href], i) => {
+        const cls = `btn ${i ? 'btn-ghost' : 'btn-accent'}`;
+        if (!href) return `<button class="${cls}" type="button" data-contact>${label}</button>`;
+        const external = href.startsWith('mailto:') ? '' : ' target="_blank" rel="noopener"';
+        return `<a class="${cls}" href="${esc(href)}"${external}>${label}</a>`;
+      })
+      .join('');
+  }
+
+  /* ---------------- Contact form ----------------
+     Messages go to Web3Forms, which emails them on. Without a key (or if sending fails)
+     the visitor can pass the same message to WhatsApp instead. */
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let contactDialog = null;
+  let contactReturnFocus = null;
+
+  function contactDialogHTML() {
+    const c = SITE.contact || {};
+    const alt = [];
+    if (c.whatsapp) alt.push(['Contact on WhatsApp', whatsappUrl()]);
+    if (c.x) alt.push(['Contact on X', c.x]);
+    return `<div class="cd-body">
+        <button class="lb-btn cd-close" type="button" data-close aria-label="Close">✕</button>
+        <form class="cd-form">
+          <p class="eyebrow">Contact me</p>
+          <h2 id="cd-title">Tell me about your project</h2>
+          <p class="cd-lead">Send a quick note and it lands straight in my inbox.</p>
+          <label class="field"><span>Your name</span>
+            <input name="name" required maxlength="100" autocomplete="name"></label>
+          <label class="field"><span>Email or phone number</span>
+            <input name="contact" required maxlength="150" autocomplete="email" placeholder="So I can get back to you"></label>
+          <label class="field"><span>What do you need?</span>
+            <textarea name="message" rows="5" required maxlength="4000" placeholder="Type of video, length, deadline, budget, links to footage…"></textarea></label>
+          <input class="cd-trap" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-accent cd-send" type="submit">Send message</button>
+          <p class="cd-status" role="status" aria-live="polite"></p>
+        </form>
+        <div class="cd-done" hidden>
+          <span class="cd-check" aria-hidden="true">✓</span>
+          <h2>Message sent</h2>
+          <p class="cd-lead"></p>
+          <button class="btn btn-ghost" type="button" data-close>Close</button>
+        </div>
+      </div>
+      ${alt.length
+        ? `<div class="cd-alt"><span>Prefer to chat?</span>${alt
+            .map(([label, href]) => `<a class="btn btn-ghost btn-small" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>`)
+            .join('')}</div>`
+        : ''}`;
+  }
+
+  function resetContact() {
+    const form = $('.cd-form', contactDialog);
+    form.reset();
+    form.hidden = false;
+    $('.cd-done', contactDialog).hidden = true;
+    $('.cd-status', form).textContent = '';
+  }
+
+  async function sendContact(form) {
+    const status = $('.cd-status', form);
+    const send = $('.cd-send', form);
+    const contactInput = form.elements.contact;
+    const name = form.elements.name.value.trim();
+    const contact = contactInput.value.trim();
+    const message = form.elements.message.value.trim();
+    const isEmail = EMAIL_RE.test(contact);
+
+    if (!isEmail && contact.replace(/\D/g, '').length < 7) {
+      contactInput.setCustomValidity('Please enter an email address or a phone number.');
+      contactInput.reportValidity();
+      return;
+    }
+    if (form.elements.botcheck.checked) return;
+
+    const viaWhatsApp = whatsappUrl(`Hi Chitwan, I'm ${name}.\n\n${message}\n\nYou can reach me at: ${contact}`);
+    status.classList.remove('error');
+    if (!SITE.formKey) {
+      if (viaWhatsApp) window.open(viaWhatsApp, '_blank', 'noopener');
+      status.textContent = 'Opening WhatsApp with your message…';
+      return;
+    }
+
+    send.disabled = true;
+    send.textContent = 'Sending…';
+    status.textContent = '';
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: SITE.formKey,
+          subject: `New project enquiry from ${name}`,
+          from_name: 'chitwanedits.com',
+          name,
+          // An email address becomes the reply-to, so replying in Gmail goes straight to them.
+          ...(isEmail ? { email: contact } : { phone: contact }),
+          message,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.message || `HTTP ${res.status}`);
+      $('.cd-done .cd-lead', contactDialog).textContent = `Thanks, ${name}. I'll get back to you soon.`;
+      form.hidden = true;
+      $('.cd-done', contactDialog).hidden = false;
+      $('.cd-done [data-close]', contactDialog).focus();
+    } catch {
+      status.classList.add('error');
+      status.innerHTML = viaWhatsApp
+        ? `Couldn't send right now. <a href="${esc(viaWhatsApp)}" target="_blank" rel="noopener">Send it on WhatsApp instead</a>.`
+        : "Couldn't send right now. Please try again in a minute.";
+    } finally {
+      send.disabled = false;
+      send.textContent = 'Send message';
+    }
+  }
+
+  function afterContactClosed() {
+    if (contactDialog.open) return;
+    document.body.classList.remove('lb-open');
+    if (contactReturnFocus && document.contains(contactReturnFocus)) contactReturnFocus.focus({ preventScroll: true });
+    contactReturnFocus = null;
+  }
+
+  function openContact(fromEl) {
+    if (!contactDialog) {
+      contactDialog = document.createElement('dialog');
+      contactDialog.className = 'contact-dialog';
+      contactDialog.setAttribute('aria-labelledby', 'cd-title');
+      contactDialog.innerHTML = contactDialogHTML();
+      document.body.append(contactDialog);
+
+      const form = $('.cd-form', contactDialog);
+      form.elements.contact.addEventListener('input', (e) => e.target.setCustomValidity(''));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendContact(form);
+      });
+      // Clicks on the dimmed backdrop land on the dialog element itself.
+      contactDialog.addEventListener('click', (e) => {
+        if (e.target !== contactDialog && !e.target.closest('[data-close]')) return;
+        contactDialog.close();
+        afterContactClosed();
+      });
+      // Esc closes natively; "close" arrives a moment later, so it is ignored if the form was reopened since.
+      contactDialog.addEventListener('close', afterContactClosed);
+    }
+    // After a sent message, start fresh; an unsent draft is kept.
+    if (!$('.cd-done', contactDialog).hidden) resetContact();
+    contactReturnFocus = fromEl;
+    $$('.card.playing').forEach(stopPreview);
+    contactDialog.showModal();
+    document.body.classList.add('lb-open');
+    if (canHover) contactDialog.querySelector('[name="name"]').focus();
   }
 
   function renderSocialProof() {
@@ -303,6 +457,16 @@
     $$('[data-year]').forEach((n) => (n.textContent = new Date().getFullYear()));
     renderContact();
     renderSocialProof();
+
+    // "Let's talk", "Contact me" and friends open the form; without <dialog> support they just scroll to #contact.
+    if (typeof HTMLDialogElement === 'function') {
+      document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-contact]');
+        if (!trigger) return;
+        e.preventDefault();
+        openContact(trigger);
+      });
+    }
 
     const revealObserver = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
