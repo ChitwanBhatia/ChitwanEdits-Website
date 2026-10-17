@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+# Layout comparison pages repeat the homepage
+Disallow: /option
 
 Sitemap: https://chitwanedits.com/sitemap.xml

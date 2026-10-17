@@ -29,6 +29,25 @@ Picks are saved to `tools/picks.json`; run `node tools/build.mjs` afterwards.
 Only videos with a full-watch pick go on the site. Skipped videos are left off, along with their clips.
 Full-watch clips are 1080p with sound and kept under 25 MB each (Cloudflare's file limit).
 
+## Layout options (for comparing first-screen styles)
+The homepage normally shows the original first screen. https://chitwanedits.com/option2 to `/option7` show the same page with another first-screen style
+(2 Ticker rows, 3 Side columns, 4 Mosaic frame, 5 Orbit, 6 Split + carousel, 7 3D floor). The rest of the page stays the same.
+**Layout options** in the homepage footer opens a switcher bar (1–7). Its **Desktop / Tablet / Phone** buttons show the page at that size inside the same window,
+and `?view=phone` (or `tablet`/`desktop`) in a link opens straight into that view, e.g. https://chitwanedits.com/option4?view=phone.
+The routes are in `site/_redirects`, and search engines are kept off them in `robots.txt`.
+`tools/hero-lab.html` shows the same styles side by side at laptop, tablet and phone sizes on this PC.
+
+## Contact form emails
+`src/worker.js` receives the **Contact me** form at `/api/enquiry`. Each enquiry is emailed from enquiries@chitwanedits.com
+to the private `NOTIFY_TO` address (free via Cloudflare Email Routing) straight away, at any hour. After that, a reminder goes out every 2 hours,
+but not between 11 pm and 8 am India time, until that enquiry's own "Stop the reminders" link is used, for up to 3 days.
+The rules are in `src/reminders.js`. Pressing **Reply** answers the visitor when they gave an email; phone numbers get a WhatsApp button.
+Every enquiry is also kept in the D1 database `chitwanedits-enquiries`. To list them:
+```
+npx wrangler d1 execute chitwanedits-enquiries --remote --command "SELECT datetime(at/1000,'unixepoch'), name, contact, message FROM enquiries ORDER BY at DESC"
+```
+To test locally, put `NOTIFY_TO=you@example.com` in `.dev.vars` and run `npx wrangler dev --test-scheduled`. Emails are saved under `.wrangler/tmp/email`.
+
 ## Common changes
 - **Add a YouTube link:** paste the link into that video's `"youtube": ""` in `tools/videos.json`, then run `node tools/build.mjs`.
 - **Change a preview or full-watch clip:** re-pick it in the clip picker, then run the build. Only changed clips are re-encoded. (`"start"`/`"dur"` in videos.json are only used when no preview was picked.)

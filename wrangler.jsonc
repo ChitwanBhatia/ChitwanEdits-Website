@@ -1,10 +1,14 @@
 // Cloudflare publish settings. Publish with:  npx wrangler deploy
-// Uploads only the site/ folder and serves it at chitwanedits.com (and www).
+// Serves the site/ folder at chitwanedits.com (and www). src/worker.js handles the contact form
+// (/api/enquiry): emails each enquiry, with reminders after 2 and 4 hours (cron below).
+// The email address enquiries go to is a secret, set once with:  npx wrangler secret put NOTIFY_TO
 {
   "name": "chitwanedits",
+  "main": "src/worker.js",
   "compatibility_date": "2026-06-01",
   "assets": {
     "directory": "./site",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
   },
@@ -13,5 +17,14 @@
   "routes": [
     { "pattern": "chitwanedits.com", "custom_domain": true },
     { "pattern": "www.chitwanedits.com", "custom_domain": true }
-  ]
+  ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "chitwanedits-enquiries", "database_id": "9e9f36a3-3fe0-465c-b132-6b7496badb42" }
+  ],
+  "send_email": [{ "name": "EMAIL" }],
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "vars": {
+    "FROM_ADDRESS": "enquiries@chitwanedits.com",
+    "SITE_URL": "https://chitwanedits.com"
+  }
 }

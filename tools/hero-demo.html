@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First-screen layout demo</title>
+<!-- Local idea board only (not part of the website). Shown inside tools/hero-lab.html.
+     ?layout=tickers | columns | mosaic | orbit | coverflow | wall -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site/assets/css/style.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .lab {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    isolation: isolate;
+    background: radial-gradient(55% 50% at 50% 48%, #17171d 0%, var(--bg) 75%);
+  }
+  .lab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(70% 60% at 50% 50%, #000 20%, transparent 85%);
+    mask-image: radial-gradient(70% 60% at 50% 50%, #000 20%, transparent 85%);
+  }
+  .copy { position: relative; z-index: 3; width: min(640px, 88vw); text-align: center; }
+  .copy .hero-title { font-size: clamp(2.1rem, 4.6vw, 4.5rem); }
+  @media (max-width: 560px) { .copy .hero-title { font-size: 2.15rem; } .copy .hero-sub { font-size: 0.97rem; } }
+
+  .clip {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #15151a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+  }
+  .clip video { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* ---------- 2 · Ticker rows: two tilted rows that never stop, in opposite directions ---------- */
+  [data-layout="tickers"] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(22px, 5vh, 52px); padding-top: 60px; }
+  .ticker { --h: clamp(80px, 13vh, 150px); width: 130%; overflow: hidden; transform: rotate(-4deg); }
+  .ticker.rev { transform: rotate(3deg); }
+  .ticker .track { display: flex; width: max-content; animation: tick 48s linear infinite; }
+  .ticker.rev .track { animation-direction: reverse; animation-duration: 54s; }
+  .ticker .clip { height: var(--h); width: calc(var(--h) * var(--a)); margin-right: 14px; }
+  @keyframes tick { to { transform: translateX(-50%); } }
+  @media (max-width: 560px) { .ticker { --h: 96px; } }
+
+  /* ---------- 3 · Side columns: vertical conveyors at the sides; on smaller screens a wall under the headline ---------- */
+  .cols { pointer-events: none; }
+  .col { overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); }
+  .col .track { display: flex; flex-direction: column; animation: climb var(--speed, 36s) linear infinite; }
+  .col.down .track { animation-direction: reverse; }
+  .col .clip { width: 100%; aspect-ratio: var(--a); margin-bottom: 14px; }
+  @keyframes climb { to { transform: translateY(-50%); } }
+  @media (min-width: 1100px) {
+    [data-layout="columns"] { display: grid; place-items: center; }
+    [data-layout="columns"] .copy { width: min(560px, 40vw); }
+    .cols { position: absolute; inset: 0; --cw: clamp(130px, 11.5vw, 190px); }
+    .col { position: absolute; top: 0; bottom: 0; width: var(--cw); }
+    .col:nth-child(1) { left: 2.5vw; }
+    .col:nth-child(2) { left: calc(2.5vw + var(--cw) + 14px); }
+    .col:nth-child(3) { right: calc(2.5vw + var(--cw) + 14px); }
+    .col:nth-child(4) { right: 2.5vw; }
+  }
+  @media (max-width: 1099px) {
+    [data-layout="columns"] { display: flex; flex-direction: column; align-items: center; padding-top: 96px; }
+    .cols {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 26px;
+      padding: 0 12px;
+      -webkit-mask-image: linear-gradient(transparent, #000 22%);
+      mask-image: linear-gradient(transparent, #000 22%);
+    }
+    .col { -webkit-mask-image: none; mask-image: none; }
+  }
+  @media (max-width: 600px) {
+    .cols { grid-template-columns: repeat(3, 1fr); }
+    .col:nth-child(4) { display: none; }
+  }
+
+  /* ---------- 4 · Mosaic frame: a contact-sheet grid with the headline in the middle ---------- */
+  [data-layout="mosaic"] { display: grid; gap: 10px; padding: 76px 12px 12px; }
+  .cell { width: 100%; height: 100%; min-height: 0; }
+  @media (min-width: 900px) {
+    [data-layout="mosaic"] { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr 1.6fr 1.6fr 1fr; }
+    [data-layout="mosaic"] .copy { grid-column: 2 / 6; grid-row: 2 / 4; align-self: center; justify-self: center; width: min(620px, 100%); }
+    [data-layout="mosaic"] .copy .hero-title { font-size: clamp(2rem, 3.5vw, 3.6rem); }
+    .cell { grid-row: var(--r); grid-column: var(--c); }
+  }
+  @media (max-width: 899px) {
+    [data-layout="mosaic"] { grid-template-columns: repeat(3, 1fr); grid-template-rows: auto repeat(3, 1fr); padding-top: 96px; }
+    [data-layout="mosaic"] .copy { grid-column: 1 / -1; justify-self: center; margin-bottom: 18px; }
+    .cell:nth-of-type(n + 11) { display: none; }
+  }
+
+  /* ---------- 5 · Orbit: clips circling the headline (positions set by script) ---------- */
+  [data-layout="orbit"] { display: grid; place-items: center; padding-top: 40px; }
+  .orbit { position: absolute; inset: 0; pointer-events: none; }
+  .o-card { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+
+  /* ---------- 6 · Split + carousel: headline on one side, a turning 3D carousel on the other ---------- */
+  .flow {
+    position: relative;
+    overflow: hidden;
+    perspective: 1200px;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  }
+  .f-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--fw);
+    aspect-ratio: 1;
+    transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.8s, filter 0.8s;
+  }
+  @media (min-width: 900px) {
+    [data-layout="coverflow"] { display: grid; grid-template-columns: 1fr 1.1fr; align-items: center; padding: 64px 4vw 0; }
+    [data-layout="coverflow"] .copy { justify-self: end; width: min(540px, 100%); text-align: left; }
+    [data-layout="coverflow"] .copy .hero-sub { margin-left: 0; }
+    [data-layout="coverflow"] .copy .hero-cta { justify-content: flex-start; }
+    .flow { height: 70vh; --fw: clamp(220px, 22vw, 340px); }
+  }
+  @media (max-width: 899px) {
+    [data-layout="coverflow"] { display: flex; flex-direction: column; align-items: center; padding-top: 96px; }
+    .flow { width: 100%; flex: 1; --fw: min(58vw, 300px); }
+  }
+
+  /* ---------- 7 · 3D floor: a tilted wall of clips rolling towards the viewer under the headline ---------- */
+  [data-layout="wall"] { display: flex; flex-direction: column; align-items: center; padding-top: clamp(84px, 12vh, 124px); }
+  .wall-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 54%; /* moved to just under the buttons by the script */
+    z-index: 1;
+    overflow: hidden;
+    perspective: 700px;
+    perspective-origin: 50% -20%;
+    -webkit-mask-image: linear-gradient(transparent, #000 50%);
+    mask-image: linear-gradient(transparent, #000 50%);
+  }
+  .wall-plane { position: absolute; left: 50%; top: 0; width: 150%; transform: translateX(-50%) rotateX(52deg); transform-origin: 50% 0; }
+  .wall-grid { display: grid; grid-template-columns: repeat(6, 1fr); column-gap: 18px; animation: roll 44s linear infinite; }
+  .wall-grid .clip { aspect-ratio: 16 / 10; margin-bottom: 18px; }
+  @keyframes roll { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+  @media (max-width: 760px) {
+    .wall-plane { width: 150%; transform: translateX(-50%) rotateX(58deg); }
+    .wall-grid { grid-template-columns: repeat(4, 1fr); column-gap: 10px; }
+    .wall-grid .clip { margin-bottom: 10px; }
+  }
+</style>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#">Chitwan<span>Edits</span></a>
+    <nav class="nav-links">
+      <a href="#">Work</a>
+      <a class="hide-sm" href="#">Before / After</a>
+      <a class="btn btn-accent btn-small" href="#">Let's talk</a>
+    </nav>
+  </header>
+
+  <main class="lab" id="lab">
+    <div class="copy">
+      <p class="eyebrow">Video editor · Motion designer</p>
+      <h1 class="hero-title">Edits that make people <em>stop scrolling.</em></h1>
+      <p class="hero-sub">Reels, YouTube videos, brand films and SaaS motion graphics, cut for retention and finished to look premium.</p>
+      <div class="hero-cta">
+        <a class="btn btn-accent btn-glow" href="#">Contact me</a>
+        <a class="btn btn-ghost" href="#">See the work</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="/site/data/videos.js"></script>
+  <script>
+  (() => {
+    const layout = new URLSearchParams(location.search).get('layout') || 'tickers';
+    const lab = document.getElementById('lab');
+    const copy = lab.querySelector('.copy');
+    const tiles = (window.CE_DATA && window.CE_DATA.tiles) || [];
+    lab.dataset.layout = layout;
+
+    const clip = (t, { cls = '', style = '' } = {}) =>
+      `<div class="clip ${cls}" style="--a:${t.aspect};${style}">`
+      + `<video src="/site/${t.src}" poster="/site/${t.poster}" muted loop playsinline autoplay preload="auto"></video></div>`;
+    const twice = (list) => list.concat(list); // seamless loops slide by exactly half
+
+    const builders = {
+      tickers() {
+        const row = (list, cls) => `<div class="ticker ${cls}"><div class="track">${twice(list).map((t) => clip(t)).join('')}</div></div>`;
+        copy.insertAdjacentHTML('beforebegin', row(tiles.filter((_, i) => i % 2 === 0), ''));
+        copy.insertAdjacentHTML('afterend', row(tiles.filter((_, i) => i % 2 === 1), 'rev'));
+      },
+
+      columns() {
+        const cols = [[], [], [], []];
+        tiles.forEach((t, i) => cols[i % 4].push(t));
+        copy.insertAdjacentHTML('afterend', `<div class="cols">${cols
+          .map((list, k) => `<div class="col${k % 2 ? ' down' : ''}" style="--speed:${32 + k * 6}s"><div class="track">${twice(list).map((t) => clip(t)).join('')}</div></div>`)
+          .join('')}</div>`);
+      },
+
+      mosaic() {
+        const spots = [[1, 1], [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [2, 1], [3, 1], [2, 6], [3, 6], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6]];
+        copy.insertAdjacentHTML('afterend', spots
+          .map(([r, c], i) => clip(tiles[i % tiles.length], { cls: 'cell', style: `--r:${r};--c:${c}` }))
+          .join(''));
+      },
+
+      orbit() {
+        const list = tiles.slice(0, lab.clientWidth < 700 ? 16 : 12);
+        copy.insertAdjacentHTML('beforebegin', `<div class="orbit">${list.map((t) => clip(t, { cls: 'o-card' })).join('')}</div>`);
+        const cards = [...lab.querySelectorAll('.o-card')];
+        const MAX_SCALE = 1.15;
+        const frame = (now) => {
+          const W = lab.clientWidth;
+          const base = W < 700 ? W * 0.28 : Math.min(190, Math.max(120, W * 0.1));
+          const size = (aspect) => {
+            const w = aspect >= 1 ? base : base * 0.5;
+            return [w, w / aspect];
+          };
+          // The path goes around the headline, big enough that no card can touch the text: a rounded box
+          // on wide screens, an oval on phones (wider than the screen, so the arcs above and below show).
+          const copyBox = copy.getBoundingClientRect();
+          const labBox = lab.getBoundingClientRect();
+          const halfW = Math.max(...list.map((t) => size(t.aspect)[0])) * MAX_SCALE / 2;
+          const halfH = Math.max(...list.map((t) => size(t.aspect)[1])) * MAX_SCALE / 2;
+          const p = W < 700 ? 2 : 4; // superellipse power: 2 = oval, 4 = rounded box
+          const k = 2 ** (1 / p); // the text box plus card margins fits exactly inside the path
+          const rx = (copyBox.width / 2 + halfW + 16) * k;
+          const ry = (copyBox.height / 2 + halfH + 16) * k;
+          const cx = copyBox.left - labBox.left + copyBox.width / 2;
+          const cy = copyBox.top - labBox.top + copyBox.height / 2;
+          const spin = now * 0.0001;
+          cards.forEach((card, i) => {
+            const a = spin + (i / cards.length) * Math.PI * 2;
+            const cos = Math.cos(a);
+            const sin = Math.sin(a);
+            const x = cx + rx * Math.sign(cos) * Math.abs(cos) ** (2 / p);
+            const y = cy + ry * Math.sign(sin) * Math.abs(sin) ** (2 / p);
+            const depth = (sin + 1) / 2; // 0 = top (far), 1 = bottom (near)
+            const [w, h] = size(list[i].aspect);
+            const s = 0.7 + (MAX_SCALE - 0.7) * depth;
+            card.style.width = `${w}px`;
+            card.style.height = `${h}px`;
+            card.style.transform = `translate(${x - w / 2}px, ${y - h / 2}px) scale(${s.toFixed(3)})`;
+            card.style.opacity = (0.45 + 0.55 * depth).toFixed(2);
+            card.style.zIndex = Math.round(depth * 10);
+          });
+          requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      },
+
+      coverflow() {
+        const list = tiles.slice(0, 11);
+        copy.insertAdjacentHTML('afterend', `<div class="flow">${list.map((t) => clip(t, { cls: 'f-card' })).join('')}</div>`);
+        const cards = [...lab.querySelectorAll('.f-card')];
+        let current = 0;
+        const place = () => {
+          const n = cards.length;
+          cards.forEach((card, i) => {
+            let k = i - current;
+            if (k > n / 2) k -= n;
+            if (k < -n / 2) k += n;
+            const d = Math.abs(k);
+            card.style.transform = `translate(-50%, -50%) translateX(${k * 52}%) translateZ(${-d * 160}px) rotateY(${k * -32}deg)`;
+            card.style.opacity = d > 3 ? 0 : (1 - d * 0.16).toFixed(2);
+            card.style.filter = `brightness(${(1 - d * 0.22).toFixed(2)})`;
+            card.style.zIndex = 20 - d;
+          });
+        };
+        place();
+        setInterval(() => { current = (current + 1) % cards.length; place(); }, 2600);
+      },
+
+      wall() {
+        lab.insertAdjacentHTML('beforeend', '<div class="wall-wrap"><div class="wall-plane"><div class="wall-grid"></div></div></div>');
+        const grid = lab.querySelector('.wall-grid');
+        // Each half must be whole rows (6 across on laptops, 4 on phones) so the loop has no jump.
+        const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+        const half = Array.from({ length: Math.ceil(16 / cols) * cols }, (_, i) => tiles[i % tiles.length]);
+        grid.innerHTML = twice(half).map((t) => clip(t)).join('');
+        // The floor starts just under the buttons, however tall the headline wraps.
+        const wrap = lab.querySelector('.wall-wrap');
+        const place = () => { wrap.style.top = `${copy.getBoundingClientRect().bottom - lab.getBoundingClientRect().top + 20}px`; };
+        place();
+        window.addEventListener('resize', place);
+        if (document.fonts) document.fonts.ready.then(place);
+      },
+    };
+
+    (builders[layout] || builders.tickers)();
+  })();
+  </script>
+</body>
+</html>

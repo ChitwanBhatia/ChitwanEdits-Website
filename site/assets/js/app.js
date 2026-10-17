@@ -286,8 +286,8 @@
   }
 
   /* ---------------- Contact form ----------------
-     Messages go to Web3Forms, which emails them on. Without a key (or if sending fails)
-     the visitor can pass the same message to WhatsApp instead. */
+     Messages go to /api/enquiry (src/worker.js), which emails them to Chitwan with reminders.
+     If sending fails, the visitor can pass the same message to WhatsApp instead. */
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   let contactDialog = null;
@@ -307,7 +307,7 @@
           <label class="field"><span>Your name</span>
             <input name="name" required maxlength="100" autocomplete="name"></label>
           <label class="field"><span>Email or phone number</span>
-            <input name="contact" required maxlength="150" autocomplete="email" placeholder="So I can get back to you"></label>
+            <input name="contact" required maxlength="150" autocomplete="email" placeholder="Email, or phone with country code"></label>
           <label class="field"><span>What do you need?</span>
             <textarea name="message" rows="5" required maxlength="4000" placeholder="Type of video, length, deadline, budget, links to footage…"></textarea></label>
           <input class="cd-trap" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -354,31 +354,17 @@
 
     const viaWhatsApp = whatsappUrl(`Hi Chitwan, I'm ${name}.\n\n${message}\n\nYou can reach me at: ${contact}`);
     status.classList.remove('error');
-    if (!SITE.formKey) {
-      if (viaWhatsApp) window.open(viaWhatsApp, '_blank', 'noopener');
-      status.textContent = 'Opening WhatsApp with your message…';
-      return;
-    }
-
     send.disabled = true;
     send.textContent = 'Sending…';
     status.textContent = '';
     try {
-      const res = await fetch('https://api.web3forms.com/submit', {
+      const res = await fetch('/api/enquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          access_key: SITE.formKey,
-          subject: `New project enquiry from ${name}`,
-          from_name: 'chitwanedits.com',
-          name,
-          // An email address becomes the reply-to, so replying in Gmail goes straight to them.
-          ...(isEmail ? { email: contact } : { phone: contact }),
-          message,
-        }),
+        body: JSON.stringify({ name, contact, message, page: location.pathname }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.message || `HTTP ${res.status}`);
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       $('.cd-done .cd-lead', contactDialog).textContent = `Thanks, ${name}. I'll get back to you soon.`;
       form.hidden = true;
       $('.cd-done', contactDialog).hidden = false;
@@ -493,6 +479,280 @@
   const STRIP_COUNT = 6;
   const scatterMQ = window.matchMedia('(min-width: 1000px) and (min-height: 620px)');
 
+  /* ---------------- Hero layout options ----------------
+     The homepage normally shows the original first screen. /option2 – /option7 (or the footer's
+     "Layout options" switcher) swap in another style for the first screen only, to compare layouts. */
+
+  const HERO_LAYOUTS = [
+    { id: 'original', name: 'Original' },
+    { id: 'tickers', name: 'Ticker rows' },
+    { id: 'columns', name: 'Side columns' },
+    { id: 'mosaic', name: 'Mosaic frame' },
+    { id: 'orbit', name: 'Orbit' },
+    { id: 'coverflow', name: 'Split + carousel' },
+    { id: 'wall', name: '3D floor' },
+  ];
+  let heroOption = 1;
+  let stopAltHero = null;
+
+  function optionFromUrl() {
+    const m = location.pathname.match(/\/option(\d+)\/?$/) || location.search.match(/[?&]option=(\d+)/);
+    const n = m ? Number(m[1]) : 1;
+    return n >= 1 && n <= HERO_LAYOUTS.length ? n : 1;
+  }
+
+  // Builds one of the alternative first screens around .hero-inner. Returns a function that stops its timers.
+  function buildAltHero(hero, layout, tiles) {
+    const inner = $('.hero-inner', hero);
+    const clip = (t, { cls = '', style = '' } = {}) => {
+      const media = reduceMotion
+        ? `<img src="${t.poster}" alt="">`
+        : `<video src="${t.src}" poster="${t.poster}" muted loop playsinline autoplay preload="auto"></video>`;
+      return `<div class="hclip ${cls}" data-id="${t.id}" style="--a:${t.aspect};${style}">${media}</div>`;
+    };
+    const twice = (list) => list.concat(list); // seamless loops slide by exactly half
+    const stops = [];
+
+    if (layout === 'tickers') {
+      const row = (list, cls) => `<div class="alt alt-ticker ${cls}"><div class="alt-track">${twice(list).map((t) => clip(t)).join('')}</div></div>`;
+      inner.insertAdjacentHTML('beforebegin', row(tiles.filter((_, i) => i % 2 === 0), ''));
+      inner.insertAdjacentHTML('afterend', row(tiles.filter((_, i) => i % 2 === 1), 'rev'));
+    }
+
+    if (layout === 'columns') {
+      const cols = [[], [], [], []];
+      tiles.forEach((t, i) => cols[i % 4].push(t));
+      inner.insertAdjacentHTML('afterend', `<div class="alt alt-cols">${cols
+        .map((list, k) => `<div class="alt-col${k % 2 ? ' down' : ''}" style="--speed:${32 + k * 6}s"><div class="alt-track">${twice(list).map((t) => clip(t)).join('')}</div></div>`)
+        .join('')}</div>`);
+    }
+
+    if (layout === 'mosaic') {
+      const spots = [[1, 1], [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [2, 1], [3, 1], [2, 6], [3, 6], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6]];
+      inner.insertAdjacentHTML('afterend', spots
+        .map(([r, c], i) => clip(tiles[i % tiles.length], { cls: `alt alt-cell${i >= 9 ? ' extra' : ''}`, style: `--r:${r};--c:${c}` }))
+        .join(''));
+    }
+
+    if (layout === 'orbit') {
+      const list = tiles.slice(0, hero.clientWidth < 700 ? 16 : 12);
+      inner.insertAdjacentHTML('beforebegin', `<div class="alt alt-orbit">${list.map((t) => clip(t)).join('')}</div>`);
+      const cards = $$('.alt-orbit .hclip', hero);
+      const MAX_SCALE = 1.15;
+      let running = true;
+      const frame = (now) => {
+        if (!running) return;
+        const W = hero.clientWidth;
+        const base = W < 700 ? W * 0.28 : Math.min(190, Math.max(120, W * 0.1));
+        const size = (aspect) => {
+          const w = aspect >= 1 ? base : base * 0.5;
+          return [w, w / aspect];
+        };
+        // A path around the headline, big enough that no card can touch the text: a rounded box on
+        // wide screens, an oval on phones (wider than the screen, so the arcs above and below show).
+        const copyBox = inner.getBoundingClientRect();
+        const heroBox = hero.getBoundingClientRect();
+        const halfW = Math.max(...list.map((t) => size(t.aspect)[0])) * MAX_SCALE / 2;
+        const halfH = Math.max(...list.map((t) => size(t.aspect)[1])) * MAX_SCALE / 2;
+        const p = W < 700 ? 2 : 4; // superellipse power: 2 = oval, 4 = rounded box
+        const k = 2 ** (1 / p); // the text box plus card margins fits exactly inside the path
+        const rx = (copyBox.width / 2 + halfW + 16) * k;
+        const ry = (copyBox.height / 2 + halfH + 16) * k;
+        const cx = copyBox.left - heroBox.left + copyBox.width / 2;
+        const cy = copyBox.top - heroBox.top + copyBox.height / 2;
+        const spin = reduceMotion ? 0 : now * 0.0001;
+        cards.forEach((card, i) => {
+          const a = spin + (i / cards.length) * Math.PI * 2;
+          const cos = Math.cos(a);
+          const sin = Math.sin(a);
+          const depth = (sin + 1) / 2; // 0 = top (far), 1 = bottom (near)
+          const [w, h] = size(list[i].aspect);
+          const x = cx + rx * Math.sign(cos) * Math.abs(cos) ** (2 / p);
+          const y = cy + ry * Math.sign(sin) * Math.abs(sin) ** (2 / p);
+          card.style.width = `${w}px`;
+          card.style.height = `${h}px`;
+          card.style.transform = `translate(${x - w / 2}px, ${y - h / 2}px) scale(${(0.7 + (MAX_SCALE - 0.7) * depth).toFixed(3)})`;
+          card.style.opacity = (0.45 + 0.55 * depth).toFixed(2);
+          card.style.zIndex = Math.round(depth * 10);
+        });
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+      stops.push(() => { running = false; });
+    }
+
+    if (layout === 'coverflow') {
+      inner.insertAdjacentHTML('afterend', `<div class="alt alt-flow">${tiles.slice(0, 11).map((t) => clip(t)).join('')}</div>`);
+      const cards = $$('.alt-flow .hclip', hero);
+      let current = 0;
+      const place = () => {
+        const n = cards.length;
+        cards.forEach((card, i) => {
+          let k = i - current;
+          if (k > n / 2) k -= n;
+          if (k < -n / 2) k += n;
+          const d = Math.abs(k);
+          card.style.transform = `translate(-50%, -50%) translateX(${k * 52}%) translateZ(${-d * 160}px) rotateY(${k * -32}deg)`;
+          card.style.opacity = d > 3 ? 0 : (1 - d * 0.16).toFixed(2);
+          card.style.filter = `brightness(${(1 - d * 0.22).toFixed(2)})`;
+          card.style.zIndex = 20 - d;
+        });
+      };
+      place();
+      if (!reduceMotion) {
+        const timer = setInterval(() => { current = (current + 1) % cards.length; place(); }, 2600);
+        stops.push(() => clearInterval(timer));
+      }
+    }
+
+    if (layout === 'wall') {
+      hero.insertAdjacentHTML('beforeend', '<div class="alt alt-wall"><div class="alt-plane"><div class="alt-grid"></div></div></div>');
+      const wall = $('.alt-wall', hero);
+      const grid = $('.alt-grid', hero);
+      // Each half must be whole rows (6 across on laptops, 4 on phones) so the loop has no jump.
+      const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+      const half = Array.from({ length: Math.ceil(16 / cols) * cols }, (_, i) => tiles[i % tiles.length]);
+      grid.innerHTML = twice(half).map((t) => clip(t)).join('');
+      // The floor starts just under the buttons, however tall the headline wraps.
+      const place = () => { wall.style.top = `${inner.getBoundingClientRect().bottom - hero.getBoundingClientRect().top + 20}px`; };
+      place();
+      window.addEventListener('resize', place);
+      if (document.fonts) document.fonts.ready.then(place);
+      stops.push(() => window.removeEventListener('resize', place));
+    }
+
+    return () => stops.forEach((stop) => stop());
+  }
+
+  // Screen sizes for previewing the site as another device, inside this window.
+  const DEVICES = {
+    desktop: { w: 1440, h: 860, label: 'Desktop' },
+    tablet: { w: 820, h: 1180, label: 'Tablet' },
+    phone: { w: 390, h: 844, label: 'Phone' },
+  };
+  const screenKind = () => (window.innerWidth >= 1000 ? 'desktop' : window.innerWidth >= 700 ? 'tablet' : 'phone');
+
+  // The footer's "Layout options" button (and any /optionN link) shows a bar for flipping between styles
+  // and for viewing the page as a desktop, tablet or phone. ?view=phone opens straight into that view.
+  function initLayoutOptions() {
+    const hero = $('#hero');
+    if (!hero) return;
+    const trigger = $('[data-layout-options]');
+    // Inside a device preview the page is shown plain, without its own switcher.
+    if (window.self !== window.top) {
+      if (trigger) trigger.remove();
+      return;
+    }
+    const base = location.pathname.replace(/option\d+\/?$/, '').replace(/index\.html$/, '');
+    const pageUrl = (n) => (n === 1 ? base : `${base}option${n}`);
+    let view = new URLSearchParams(location.search).get('view');
+    if (!DEVICES[view]) view = screenKind();
+    let bar = null;
+    let viewer = null;
+    const previewing = () => viewer && !viewer.hidden;
+
+    const syncUrl = () => history.replaceState(null, '', pageUrl(heroOption) + (view === screenKind() ? '' : `?view=${view}`));
+    const update = () => {
+      const opt = HERO_LAYOUTS[heroOption - 1];
+      $('.sb-name', bar).innerHTML = `<small>Layout ${heroOption}</small>${esc(opt.name)}`;
+      $$('.sb-btns button', bar).forEach((b, i) => b.setAttribute('aria-pressed', String(i + 1 === heroOption)));
+      $$('.sb-views button', bar).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+    };
+
+    // The device frame: the same page in an iframe at that device's size, scaled to fit above the bar.
+    const fitViewer = () => {
+      if (!previewing()) return;
+      const d = DEVICES[view];
+      const room = bar.offsetHeight + 40;
+      const scale = Math.min(1, (window.innerWidth - 32) / d.w, (window.innerHeight - room - 44) / d.h);
+      const frame = $('iframe', viewer);
+      frame.style.width = `${d.w}px`;
+      frame.style.height = `${d.h}px`;
+      frame.style.transform = `scale(${scale})`;
+      $('.dv-frame', viewer).style.width = `${Math.round(d.w * scale)}px`;
+      $('.dv-frame', viewer).style.height = `${Math.round(d.h * scale)}px`;
+      viewer.style.paddingBottom = `${room}px`;
+      $('.dv-label', viewer).textContent = `${d.label} view · ${d.w} × ${d.h}${scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ''}`;
+    };
+    const openViewer = () => {
+      if (!viewer) {
+        viewer = document.createElement('div');
+        viewer.className = 'device-view';
+        viewer.innerHTML = '<div class="dv-frame"><iframe title="Device preview"></iframe></div><p class="dv-label"></p>';
+        document.body.append(viewer);
+        window.addEventListener('resize', fitViewer);
+      }
+      const frame = $('iframe', viewer);
+      const src = new URL(pageUrl(heroOption), location.href).href;
+      // A new layout or a new device size loads the page fresh, so every style is built for that size.
+      if (frame.src !== src || viewer.dataset.device !== view || viewer.hidden) frame.src = src;
+      viewer.hidden = false;
+      viewer.dataset.device = view;
+      document.documentElement.classList.add('device-preview');
+      $$('video', hero).forEach((v) => v.pause()); // the page behind the frame stays still
+      fitViewer();
+    };
+    const closeViewer = () => {
+      if (!previewing()) return;
+      viewer.hidden = true;
+      $('iframe', viewer).src = 'about:blank';
+      document.documentElement.classList.remove('device-preview');
+      renderHero(); // the page behind may have missed layout changes while the frame was open
+      $$('video', hero).forEach((v) => v.play().catch(() => {}));
+    };
+
+    const choose = (n) => {
+      heroOption = n;
+      if (previewing()) openViewer();
+      else {
+        renderHero();
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      }
+      update();
+      syncUrl();
+    };
+    const chooseView = (v) => {
+      view = v;
+      if (view === screenKind()) closeViewer();
+      else openViewer();
+      update();
+      syncUrl();
+    };
+    const show = () => {
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'style-bar';
+        bar.setAttribute('role', 'group');
+        bar.setAttribute('aria-label', 'Layout options');
+        bar.innerHTML = `<span class="sb-name"></span><div class="sb-btns">${HERO_LAYOUTS
+          .map((o, i) => `<button type="button" title="${esc(o.name)}">${i + 1}</button>`)
+          .join('')}</div><div class="sb-views">${Object.entries(DEVICES)
+          .map(([key, d]) => `<button type="button" data-view="${key}">${d.label}</button>`)
+          .join('')}</div><button class="sb-close" type="button" aria-label="Hide layout options">✕</button>`;
+        document.body.append(bar);
+        $$('.sb-btns button', bar).forEach((b, i) => b.addEventListener('click', () => choose(i + 1)));
+        $$('.sb-views button', bar).forEach((b) => b.addEventListener('click', () => chooseView(b.dataset.view)));
+        $('.sb-close', bar).addEventListener('click', () => {
+          view = screenKind();
+          closeViewer();
+          bar.hidden = true;
+          syncUrl();
+        });
+      }
+      bar.hidden = false;
+      update();
+    };
+
+    if (trigger) {
+      trigger.addEventListener('click', () => {
+        show();
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+    }
+    if (heroOption > 1 || view !== screenKind()) show();
+    if (view !== screenKind()) openViewer();
+  }
+
   function tileHTML(t, style) {
     const v = byId[t.id];
     const media = reduceMotion
@@ -522,6 +782,21 @@
     const tiles = DATA.tiles || [];
     const scatter = scatterMQ.matches;
     hero.classList.remove('ready');
+
+    if (stopAltHero) stopAltHero();
+    stopAltHero = null;
+    $$('.alt', hero).forEach((n) => n.remove());
+    const layout = HERO_LAYOUTS[heroOption - 1].id;
+    if (layout !== 'original') {
+      collage.innerHTML = '';
+      strips.forEach((s) => (s.innerHTML = ''));
+      hero.classList.remove('strips');
+      hero.dataset.layout = layout;
+      stopAltHero = buildAltHero(hero, layout, tiles);
+      hero.classList.add('ready');
+      return;
+    }
+    delete hero.dataset.layout;
     hero.classList.toggle('strips', !scatter);
 
     if (scatter) {
@@ -567,7 +842,7 @@
     window.addEventListener('resize', () => scatterMQ.matches || updateDrift());
 
     hero.addEventListener('click', (e) => {
-      const tile = e.target.closest('.tile');
+      const tile = e.target.closest('.tile, .hclip');
       if (!tile) return;
       const v = byId[tile.dataset.id];
       openLightbox(v.id, videosIn(v.cat).map((x) => x.id), tile);
@@ -575,7 +850,7 @@
 
     // Only play the clips while the hero is on screen.
     new IntersectionObserver(([entry]) => {
-      $$('.tile video', hero).forEach((v) => (entry.isIntersecting ? v.play().catch(() => {}) : v.pause()));
+      $$('video', hero).forEach((v) => (entry.isIntersecting ? v.play().catch(() => {}) : v.pause()));
     }, { threshold: 0.05 }).observe(hero);
 
     const hint = $('.scroll-hint', hero);
@@ -608,7 +883,9 @@
   /* ---------------- Pages ---------------- */
 
   function initHome() {
+    heroOption = optionFromUrl();
     initHero();
+    initLayoutOptions();
 
     const stats = $('#work-stats');
     if (stats) {

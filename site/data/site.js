@@ -12,10 +12,6 @@ window.CE_SITE = {
     x: 'https://x.com/chitwan_edits',   // full profile URL
   },
 
-  // Access key from web3forms.com. "Contact me" form messages are emailed to the
-  // address the key was created with. While empty, the form hands the message to WhatsApp.
-  formKey: '',
-
   // Client reviews, shown in a "What clients say" section once this list has entries.
   // { quote: '...', name: 'Client name', role: 'Founder, Company' }
   testimonials: [],

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout Lab</title>
+<!-- Local idea board for first-screen layouts. Open http://localhost:8080/tools/hero-lab.html
+     while `node tools/serve.mjs` runs. Nothing here changes the website. -->
+<style>
+  :root { --bg: #0b0b0d; --bg-2: #141418; --bg-3: #1d1d23; --line: rgba(255, 255, 255, 0.1); --text: #f4f4f2; --muted: #9a9aa1; --accent: #d4ff3a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, 'Segoe UI', sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .bar strong { font-size: 0.95rem; }
+  .note { color: var(--muted); font-size: 0.82rem; }
+  .sizes { display: inline-flex; margin-left: auto; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); }
+  .sizes button { padding: 5px 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); }
+  .sizes button.on { background: var(--text); color: #0b0b0d; font-weight: 600; }
+
+  .options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px 0; }
+  .options button { flex: none; display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); white-space: nowrap; }
+  .options button span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bg-3); font-size: 0.78rem; font-weight: 700; }
+  .options button.on { border-color: var(--accent); }
+  .options button.on span { background: var(--accent); color: #0b0b0d; }
+
+  .about { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 16px; }
+  .about h1 { margin: 0; font-size: 1.05rem; }
+  .about p { margin: 0; color: var(--muted); max-width: 90ch; }
+
+  .stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 6px 16px 16px; }
+  .device { position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 12px; background: #000; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9); }
+  .device.phone { border-width: 6px; border-color: #26262c; border-radius: 30px; }
+  .device iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: var(--bg); }
+  .size-label { margin-top: 8px; text-align: center; color: var(--muted); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <strong>Layout Lab · first screen</strong>
+    <span class="note">Ideas only. Your website is not changed. ← → switch options.</span>
+    <div class="sizes" id="sizes">
+      <button type="button" data-size="laptop">Laptop</button>
+      <button type="button" data-size="tablet">Tablet</button>
+      <button type="button" data-size="phone">Phone</button>
+    </div>
+  </div>
+  <div class="options" id="options"></div>
+  <div class="about"><h1 id="name"></h1><p id="desc"></p></div>
+  <div class="stage" id="stage">
+    <div>
+      <div class="device" id="device"><iframe id="frame" title="Layout preview"></iframe></div>
+      <div class="size-label" id="size-label"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const OPTIONS = [
+    { id: 'current', name: 'Now on your site', desc: 'Laptop: clips scattered around the headline, tilted, floating and leaning away from the mouse. Phone: two strips sliding back and forth above and below the headline.' },
+    { id: 'tickers', name: 'Ticker rows', desc: 'Two tilted rows that never stop sliding, in opposite directions, like a news ticker. The same idea on every screen, just smaller on phones.' },
+    { id: 'columns', name: 'Side columns', desc: 'Laptop: four columns of clips rolling up and down on both sides of the headline. Tablet and phone: the headline on top with a moving wall of columns underneath.' },
+    { id: 'mosaic', name: 'Mosaic frame', desc: 'Laptop: a tidy grid of clips framing the headline like a contact sheet. Tablet and phone: headline on top, a 3 × 3 grid of clips below.' },
+    { id: 'orbit', name: 'Orbit', desc: 'Clips slowly circle the headline, coming closer and brighter as they pass underneath. On phones you see the arcs above and below the headline.' },
+    { id: 'coverflow', name: 'Split + carousel', desc: 'Laptop: headline on the left, a 3D carousel of clips on the right that turns every few seconds. Tablet and phone: the carousel sits under the headline.' },
+    { id: 'wall', name: '3D floor', desc: 'A tilted floor of clips under the headline that rolls slowly towards the viewer and fades into the background.' },
+  ];
+  const SIZES = {
+    laptop: { w: 1440, h: 860, label: 'Laptop · 1440 × 860' },
+    tablet: { w: 820, h: 1180, label: 'Tablet · 820 × 1180' },
+    phone: { w: 390, h: 844, label: 'Phone · 390 × 844' },
+  };
+
+  const frame = document.getElementById('frame');
+  const device = document.getElementById('device');
+  const stage = document.getElementById('stage');
+  let [optId, size] = location.hash.slice(1).split('/');
+  if (!OPTIONS.some((o) => o.id === optId)) optId = 'current';
+  if (!SIZES[size]) size = 'laptop';
+
+  document.getElementById('options').innerHTML = OPTIONS
+    .map((o, i) => `<button type="button" data-opt="${o.id}"><span>${i + 1}</span>${o.name}</button>`)
+    .join('');
+
+  const src = (id) => (id === 'current' ? '/site/index.html' : `hero-demo.html?layout=${id}`);
+
+  function fit() {
+    const s = SIZES[size];
+    const availW = stage.clientWidth - 32 - 12;
+    const availH = stage.clientHeight - 22 - 30;
+    const scale = Math.min(1, availW / s.w, availH / s.h);
+    frame.style.width = `${s.w}px`;
+    frame.style.height = `${s.h}px`;
+    frame.style.transform = `scale(${scale})`;
+    device.style.width = `${Math.round(s.w * scale)}px`;
+    device.style.height = `${Math.round(s.h * scale)}px`;
+    document.getElementById('size-label').textContent = `${s.label}${scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ''}`;
+  }
+
+  function show() {
+    const opt = OPTIONS.find((o) => o.id === optId);
+    document.querySelectorAll('[data-opt]').forEach((b) => b.classList.toggle('on', b.dataset.opt === optId));
+    document.querySelectorAll('[data-size]').forEach((b) => b.classList.toggle('on', b.dataset.size === size));
+    document.getElementById('name').textContent = `${OPTIONS.indexOf(opt) + 1}. ${opt.name}`;
+    document.getElementById('desc').textContent = opt.desc;
+    device.classList.toggle('phone', size === 'phone');
+    history.replaceState(null, '', `#${optId}/${size}`);
+    fit();
+    const next = new URL(src(optId), location.href).href;
+    if (frame.src !== next) frame.src = next;
+    else frame.contentWindow.location.reload(); // size changed: reload so the layout starts fresh at the new size
+  }
+
+  document.getElementById('options').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-opt]');
+    if (b) { optId = b.dataset.opt; show(); }
+  });
+  document.getElementById('sizes').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-size]');
+    if (b) { size = b.dataset.size; show(); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const i = OPTIONS.findIndex((o) => o.id === optId);
+    optId = OPTIONS[(i + (e.key === 'ArrowRight' ? 1 : -1) + OPTIONS.length) % OPTIONS.length].id;
+    show();
+  });
+  window.addEventListener('resize', fit);
+  show();
+})();
+</script>
+</body>
+</html>

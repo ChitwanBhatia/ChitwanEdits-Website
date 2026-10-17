@@ -52,8 +52,10 @@ function savePicks(req, res) {
 
 http
   .createServer((req, res) => {
-    const rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    let rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     if (req.method === 'POST' && rel === '/api/picks') return savePicks(req, res);
+    // Same as site/_redirects on Cloudflare: /optionN shows the homepage with that layout option.
+    if (/^\/site\/option\d+\/?$/.test(rel)) rel = '/site/index.html';
     if (rel === '/') {
       res.writeHead(302, { Location: '/site/' });
       return res.end();

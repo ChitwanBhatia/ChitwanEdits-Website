@@ -1,0 +1,9 @@
+# Layout options: the homepage with a different first-screen style (see "Layout options" in the footer).
+# 200 = show the homepage while keeping the /optionN address.
+/option1 / 200
+/option2 / 200
+/option3 / 200
+/option4 / 200
+/option5 / 200
+/option6 / 200
+/option7 / 200
