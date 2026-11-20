@@ -11,11 +11,19 @@ import { REMINDER_EVERY_HOURS, STOP_AFTER_DAYS, isQuietTime, nextReminderAt } fr
 const MAX_PER_HOUR = 30; // flood guard for the whole form
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Private trial pages in site/trial/ (shared by link only, not linked from the homepage).
+// Key = lowercase name, value = the page's address.
+const TRIAL_PAGES = { thrivecart: '/trial/ThriveCart' };
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/api/enquiry' && request.method === 'POST') return receiveEnquiry(request, env);
     if (url.pathname === '/api/enquiry/stop') return stopReminders(request, url, env);
+    // Private trial pages: any spelling (e.g. /trial/thrivecart) goes to the page's real address.
+    const trial = url.pathname.match(/^\/trials?\/([^/]+?)(?:\.html)?\/?$/i);
+    const trialPath = trial && TRIAL_PAGES[trial[1].toLowerCase()];
+    if (trialPath && url.pathname !== trialPath) return Response.redirect(`${url.origin}${trialPath}${url.search}`, 301);
     return env.ASSETS.fetch(request);
   },
 

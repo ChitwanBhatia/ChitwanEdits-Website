@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trial edit for ThriveCart | Chitwan Edits</title>
+  <!-- Private trial page: reachable by link only. Not linked from the homepage, kept out of search. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="A trial edit made for ThriveCart by Chitwan Edits.">
+  <meta property="og:title" content="A trial edit, made for ThriveCart">
+  <meta property="og:description" content="Kamila's story, cut and animated in her channel's style. By Chitwan Edits.">
+  <meta property="og:type" content="video.other">
+  <meta property="og:url" content="https://chitwanedits.com/trial/ThriveCart">
+  <meta property="og:image" content="https://chitwanedits.com/trial/media/thrivecart/share.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Chitwan Edits">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0a0b0d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d4ff3a'/%3E%3Cpath d='M26 20l20 12-20 12z' fill='%230b0b0d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="/trial/media/thrivecart/poster.jpg">
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --panel: #121418;
+      --panel-2: #171a1f;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-2: rgba(255, 255, 255, 0.14);
+      --text: #f4f4f2;
+      --muted: #a3a7ad;
+      --teal: #35d3cb;
+      --teal-deep: #10a8a8;
+      --teal-ink: #04201f;
+      --lime: #d4ff3a;
+      --radius: 18px;
+      --wrap: 1120px;
+      --display: 'Syne', 'Arial Black', sans-serif;
+      --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --hand: 'Caveat', 'Segoe Script', cursive;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    /* Soft teal light and the little "+" marks from the video's backgrounds */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(60rem 34rem at 50% -8rem, rgba(53, 211, 203, 0.20), transparent 70%),
+        radial-gradient(40rem 30rem at 100% 40%, rgba(16, 168, 168, 0.08), transparent 70%),
+        radial-gradient(36rem 28rem at 0% 75%, rgba(16, 168, 168, 0.07), transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath d='M30 26v8M26 30h8' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='92' cy='88' r='3.2' fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1.2'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; }
+    img, video { display: block; max-width: 100%; }
+    .wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+    h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 700; line-height: 1.08; letter-spacing: -0.01em; }
+    p { margin: 0; }
+    .teal { color: var(--teal); }
+
+    /* ---------- Top bar ---------- */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 22px;
+      padding-bottom: 22px;
+    }
+    .brand { font-family: var(--display); font-weight: 800; font-size: 1.2rem; text-decoration: none; letter-spacing: -0.01em; }
+    .brand span { color: var(--lime); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.03);
+      white-space: nowrap;
+    }
+    .pill svg { width: 14px; height: 14px; color: var(--teal); flex: none; }
+
+    /* ---------- Hero ---------- */
+    .hero { text-align: center; padding-top: clamp(28px, 6vw, 64px); }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+    .eyebrow::before, .eyebrow::after { content: ''; width: 22px; height: 1px; background: currentColor; opacity: 0.6; }
+    .hero h1 { margin-top: 18px; font-size: clamp(2.3rem, 6.4vw, 4.6rem); }
+    .hero-sub { max-width: 620px; margin: 18px auto 0; color: var(--muted); font-size: clamp(1rem, 2vw, 1.15rem); }
+    .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 22px; }
+    .chip {
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      font-size: 0.82rem;
+      color: #d7d9dc;
+    }
+
+    /* ---------- Player ---------- */
+    .player-wrap { position: relative; margin-top: clamp(30px, 5vw, 48px); }
+    .player-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -18px -10px;
+      border-radius: 34px;
+      background: radial-gradient(closest-side, rgba(53, 211, 203, 0.35), transparent);
+      filter: blur(40px);
+      opacity: 0.55;
+      z-index: -1;
+    }
+    .player {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--line-2);
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9), 0 0 0 6px rgba(255, 255, 255, 0.02);
+    }
+    .player video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      color: var(--text);
+      font: inherit;
+      background: linear-gradient(180deg, rgba(10, 11, 13, 0) 45%, rgba(10, 11, 13, 0.55) 100%);
+      transition: opacity 0.35s ease, visibility 0.35s;
+    }
+    .overlay[hidden] { display: grid; opacity: 0; visibility: hidden; pointer-events: none; }
+    .play {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 22px 12px 12px;
+      border-radius: 999px;
+      background: rgba(10, 11, 13, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      font-weight: 600;
+      font-size: 1rem;
+      transition: transform 0.25s ease, background 0.25s ease;
+    }
+    .play-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--teal);
+      color: var(--teal-ink);
+      box-shadow: 0 0 0 0 rgba(53, 211, 203, 0.6);
+      animation: pulse 2.4s ease-out infinite;
+    }
+    .play-icon svg { width: 22px; height: 22px; margin-left: 3px; }
+    .play small { display: block; font-weight: 500; font-size: 0.8rem; color: var(--muted); }
+    .overlay:hover .play, .overlay:focus-visible .play { transform: scale(1.04); background: rgba(10, 11, 13, 0.75); }
+    .overlay:focus-visible { outline: none; }
+    .overlay:focus-visible .play { outline: 2px solid var(--teal); outline-offset: 4px; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(53, 211, 203, 0.55); }
+      70%, 100% { box-shadow: 0 0 0 18px rgba(53, 211, 203, 0); }
+    }
+    .end-card {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 20px;
+      background: rgba(6, 8, 9, 0.82);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    .end-card[hidden] { display: none; }
+    .end-card h2 { font-size: clamp(1.4rem, 3.6vw, 2.2rem); }
+    .end-card p { color: var(--muted); margin-top: 8px; }
+    .end-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+    .player-msg {
+      position: absolute;
+      inset: auto 16px 16px 16px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(10, 11, 13, 0.85);
+      border: 1px solid var(--line-2);
+      font-size: 0.9rem;
+    }
+    .player-msg[hidden] { display: none; }
+    .player-msg a { color: var(--teal); }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font: 600 0.95rem/1 var(--body);
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+    .btn-teal { background: var(--teal); color: var(--teal-ink); }
+    .btn-teal:hover { background: #57e0d9; }
+    .btn-ghost { background: rgba(255, 255, 255, 0.04); color: var(--text); border-color: var(--line-2); }
+    .btn-ghost:hover { border-color: rgba(255, 255, 255, 0.3); }
+    .btn svg { width: 18px; height: 18px; flex: none; }
+
+    /* ---------- Sections ---------- */
+    section.block { padding-top: clamp(64px, 10vw, 110px); }
+    .kicker { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); }
+    .block h2 { margin-top: 12px; font-size: clamp(1.7rem, 4vw, 2.6rem); }
+    .lead { margin-top: 14px; color: var(--muted); max-width: 640px; font-size: 1.05rem; }
+
+    /* Letter */
+    .letter {
+      position: relative;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: clamp(28px, 5vw, 52px);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(53, 211, 203, 0.07), rgba(53, 211, 203, 0) 40%),
+        var(--panel);
+      border: 1px solid var(--line-2);
+      box-shadow: 0 40px 80px -50px rgba(0, 0, 0, 0.9);
+    }
+    .letter::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 40px;
+      right: 40px;
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, transparent, var(--teal), transparent);
+    }
+    .letter h2 { margin-top: 10px; font-size: clamp(1.6rem, 3.6vw, 2.2rem); }
+    .letter-body { margin-top: 22px; display: grid; gap: 16px; font-size: clamp(1rem, 1.9vw, 1.1rem); color: #e2e4e6; }
+    .letter-body strong { color: var(--text); font-weight: 600; }
+    .letter-body mark {
+      color: inherit;
+      background: linear-gradient(transparent 58%, rgba(53, 211, 203, 0.32) 58%);
+      padding: 0 2px;
+    }
+    .sign { margin-top: 30px; display: flex; align-items: center; gap: 16px; }
+    .sign-mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--lime);
+      color: #0b0b0d;
+      flex: none;
+    }
+    .sign-mark svg { width: 22px; height: 22px; }
+    .sign-name { font-family: var(--hand); font-size: 2.2rem; line-height: 1; color: var(--text); }
+    .sign-role { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+    /* Footer */
+    footer {
+      margin-top: clamp(64px, 10vw, 110px);
+      padding: 28px 0 40px;
+      border-top: 1px solid var(--line);
+    }
+    .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; font-size: 0.9rem; color: var(--muted); }
+    .foot a { color: var(--text); text-decoration: none; font-weight: 500; }
+    .foot a:hover { color: var(--teal); }
+
+    /* Reveal on scroll */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+    .reveal.in { opacity: 1; transform: none; }
+    .hero > :nth-child(-n+4) { animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    .hero > :nth-child(2) { animation-delay: 0.05s; }
+    .hero > :nth-child(3) { animation-delay: 0.1s; }
+    .hero > :nth-child(4) { animation-delay: 0.15s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 560px) {
+      .wrap { padding: 0 16px; }
+      .bar { padding-top: 16px; padding-bottom: 16px; }
+      .pill .long { display: none; }
+      .eyebrow { font-size: 0.72rem; letter-spacing: 0.1em; }
+      .eyebrow::before, .eyebrow::after { display: none; }
+      .player { border-radius: 12px; }
+      .play { padding: 8px 16px 8px 8px; gap: 10px; font-size: 0.92rem; }
+      .play-icon { width: 46px; height: 46px; }
+      .play-icon svg { width: 18px; height: 18px; }
+      .letter::before { left: 20px; right: 20px; }
+      .sign-name { font-size: 1.9rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .hero > :nth-child(-n+4) { animation: none; }
+      .play-icon { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap bar">
+    <a class="brand" href="/" aria-label="Chitwan Edits home">Chitwan<span>Edits</span></a>
+    <span class="pill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span>Private trial<span class="long"> · shared by link only</span></span>
+    </span>
+  </header>
+
+  <main>
+    <section class="wrap hero" aria-labelledby="title">
+      <p class="eyebrow">Trial edit · Made for ThriveCart</p>
+      <h1 id="title">A trial edit, made<br>for <span class="teal">ThriveCart</span>.</h1>
+      <p class="hero-sub">Kamila's story, cut and animated in her channel's style. Press play, and thank you for the chance to work on it.</p>
+      <div class="chips" aria-label="Video details">
+        <span class="chip">1:46</span>
+        <span class="chip">1080p · Full HD</span>
+        <span class="chip">Edit &amp; motion graphics by Chitwan</span>
+      </div>
+
+      <div class="player-wrap">
+        <div class="player" id="player">
+          <video id="trial-video" controls playsinline preload="none" poster="/trial/media/thrivecart/poster.jpg" aria-label="ThriveCart trial edit"></video>
+          <button class="overlay" id="play-overlay" type="button" aria-label="Play the trial edit">
+            <span class="play">
+              <span class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg></span>
+              <span>Play the trial<small>1 min 46 s · sound on</small></span>
+            </span>
+          </button>
+          <div class="end-card" id="end-card" hidden>
+            <div>
+              <h2>Thanks for watching.</h2>
+              <p>I'd love to hear what you think.</p>
+              <div class="end-actions">
+                <button class="btn btn-ghost" type="button" id="replay">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                  Watch again
+                </button>
+              </div>
+            </div>
+          </div>
+          <p class="player-msg" id="player-msg" role="status" hidden></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap block" aria-labelledby="note-title">
+      <article class="letter reveal">
+        <p class="kicker">A note from me</p>
+        <h2 id="note-title">Thank you for this chance.</h2>
+        <div class="letter-body">
+          <p>Hi there,</p>
+          <p>I really appreciate you trusting me with this trial. <strong>I hope you like it.</strong></p>
+          <p><strong>A quick note about this trial:</strong> it isn't the best I can produce. My main focus was to make it feel like <mark>the videos she already publishes</mark>, so it fits right into her channel. If you'd like something more motion-graphics heavy, I can absolutely take it further.</p>
+          <p>I also went in knowing very little about Kamila and the channel so far. The more I learn about her story and her audience, the sharper every edit gets.</p>
+          <p>If anything could be better, even something small, just tell me and I'll fix it. I'm genuinely <strong>thrilled about the chance to work with you</strong>.</p>
+        </div>
+        <div class="sign">
+          <span class="sign-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></span>
+          <div>
+            <div class="sign-name">Chitwan</div>
+            <div class="sign-role">Chitwan Edits · Video editor &amp; motion designer</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>Made with care by Chitwan Edits</span>
+      <a href="/">See more of my work →</a>
+    </div>
+  </footer>
+
+  <script src="/assets/js/vendor/hls.light.min.js" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var SRC = '/trial/media/thrivecart/master.m3u8';
+    var WA = '916399335426';
+    var video = document.getElementById('trial-video');
+    var overlay = document.getElementById('play-overlay');
+    var endCard = document.getElementById('end-card');
+    var msg = document.getElementById('player-msg');
+    var hls = null;
+    var loaded = false;
+
+    // The video streams in small HD parts (HLS). Safari plays them natively; other browsers use hls.js.
+    video.controls = false;
+
+    function showError() {
+      msg.innerHTML = 'The video didn’t load. Please refresh the page, or <a href="https://wa.me/' + WA +
+        '?text=' + encodeURIComponent('Hi Chitwan, the ThriveCart trial video is not loading for me.') +
+        '" target="_blank" rel="noopener">message me on WhatsApp</a> and I’ll send it directly.';
+      msg.hidden = false;
+    }
+
+    function load() {
+      if (loaded) return;
+      loaded = true;
+      if (window.Hls && window.Hls.isSupported()) {
+        hls = new window.Hls({ autoStartLoad: false, maxBufferLength: 30 });
+        hls.on(window.Hls.Events.MANIFEST_PARSED, function () {
+          // Start in full HD on big screens with a decent connection; it steps down by itself if needed.
+          var conn = navigator.connection;
+          var slow = conn && (conn.saveData || /(^|-)2g|3g/.test(conn.effectiveType || ''));
+          if (!slow && window.innerWidth >= 700) hls.startLevel = hls.levels.length - 1;
+          hls.startLoad();
+        });
+        var retries = 0;
+        hls.on(window.Hls.Events.ERROR, function (_, data) {
+          if (!data.fatal) return;
+          if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && retries++ < 3) hls.startLoad();
+          else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && retries++ < 3) hls.recoverMediaError();
+          else showError();
+        });
+        hls.loadSource(SRC);
+        hls.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = SRC;
+        video.addEventListener('error', showError);
+      } else {
+        showError();
+      }
+    }
+
+    // Warm up as soon as the visitor shows interest, so playback starts instantly.
+    var player = document.getElementById('player');
+    ['pointerenter', 'touchstart', 'focusin'].forEach(function (ev) {
+      player.addEventListener(ev, load, { once: true, passive: true });
+    });
+
+    function start() {
+      load();
+      overlay.hidden = true;
+      endCard.hidden = true;
+      video.controls = true;
+      var p = video.play();
+      if (p && p.catch) p.catch(function () { /* autoplay blocked: controls are visible, the visitor can press play */ });
+    }
+    overlay.addEventListener('click', start);
+    document.getElementById('replay').addEventListener('click', function () { video.currentTime = 0; start(); });
+    video.addEventListener('play', function () { overlay.hidden = true; endCard.hidden = true; video.controls = true; });
+    video.addEventListener('ended', function () {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+      endCard.hidden = false;
+    });
+
+    // ---- Gentle reveal on scroll ----
+    var items = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    } else {
+      items.forEach(function (el) { el.classList.add('in'); });
+    }
+  });
+  </script>
+</body>
+</html>

@@ -55,10 +55,22 @@ To test locally, put `NOTIFY_TO=you@example.com` in `.dev.vars` and run `npx wra
 - **Rename / recategorise / feature:** edit `title`, `cat`, or `featured` (1–3 = shown on the homepage, in that order).
 - **Contact links, reviews, client names:** edit `site/data/site.js` and reload — no build needed.
 
+## Private trial pages
+`site/trial/<Name>.html` is a page for one client's trial, e.g. https://chitwanedits.com/trial/ThriveCart.
+It isn't linked from the homepage and has a `noindex` tag, so only people with the link see it. It holds just the video and a short note.
+Add the lowercase name to `TRIAL_PAGES` in `src/worker.js` so any spelling of the link (`/trial/thrivecart`) works.
+Long videos go over Cloudflare's 25 MB file limit, so they are streamed in 4-second HD parts (HLS, 1080p + 720p) played by
+`site/assets/js/vendor/hls.light.min.js` (Safari plays them natively). Made with:
+```
+ffmpeg -i "Trial.mp4" -filter_complex "[0:v]split=2[a][b];[b]scale=1280:720:flags=lanczos[b720]" -map "[a]" -map "[b720]" -map 0:a -map 0:a -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p -sc_threshold 0 -g 120 -keyint_min 120 -crf:v:0 19 -maxrate:v:0 9M -bufsize:v:0 18M -crf:v:1 21 -maxrate:v:1 4500k -bufsize:v:1 9M -c:a aac -b:a 192k -ac 2 -ar 48000 -f hls -hls_time 4 -hls_playlist_type vod -hls_segment_type fmp4 -hls_flags independent_segments -hls_segment_filename "v%v/seg_%03d.m4s" -hls_fmp4_init_filename "init.mp4" -master_pl_name master.m3u8 -var_stream_map "v:0,a:0,name:1080 v:1,a:1,name:720" "v%v/index.m3u8"
+```
+Run it inside `site/trial/media/<name>/`, then add `poster.jpg` (1920×1080) and `share.jpg` (1200×630) frames there.
+
 ## Publish
 Live at https://chitwanedits.com (and www), hosted free on Cloudflare. Settings are in `wrangler.jsonc`; it uploads only `site/`.
 ```
 npx wrangler deploy
 ```
 The first run on a new PC asks you to log in to Cloudflare (`npx wrangler login`) and click Allow.
+The login expires after a while; if `deploy` asks for a `CLOUDFLARE_API_TOKEN`, run `npx wrangler login` again in a normal terminal and deploy from that same terminal.
 Clicking a video plays its full-watch clip (or its YouTube video, if a link is set).
